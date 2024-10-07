@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="cs420.cs420finalproject.ApplicationController">
+  <top>
+    <Label text="Farm Management System" style="-fx-font-size: 24;" BorderPane.alignment="CENTER"/>
+  </top>
+
+  <center>
+    <VBox spacing="10" alignment="CENTER">
+      <Button text="Collect Data" onAction="#onCollectData"/>
+      <Button text="View Data" onAction="#onViewData"/>
+      <Button text="Irrigate Fields" onAction="#onIrrigate"/>
+    </VBox>
+  </center>
+
+  <bottom>
+    <Label fx:id="statusLabel" text="Status: Ready" BorderPane.alignment="CENTER"/>
+  </bottom>
+</BorderPane>
