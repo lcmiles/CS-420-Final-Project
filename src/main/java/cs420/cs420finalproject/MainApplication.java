@@ -10,7 +10,7 @@ public class MainApplication extends Application {
     public void start(Stage stage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApplication.class.getResource("farmManagementView.fxml"));
         Scene scene = new Scene(fxmlLoader.load());
-        stage.setTitle("Farm Management System");
+        stage.setTitle("Agricultural Drone Automation System");
         stage.setScene(scene);
         stage.show();
     }

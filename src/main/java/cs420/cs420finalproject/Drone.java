@@ -1,6 +1,7 @@
 package cs420.cs420finalproject;
 
 public class Drone {
+
     private int droneID;
     private String status;
     private double batteryLevel;
