@@ -95,12 +95,12 @@ public class ApplicationController {
     }
     // Method to animate the drone to each field item, then return to the base
     @FXML
-    private void onIrrigate() {
+    private void onCropDataCollect() {
         if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
             statusLabel.setText("Add a drone, base, and fields first.");
             return;
         }
-        statusLabel.setText("Irrigating...");
+        statusLabel.setText("Collecting crop growth data...");
         DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
         // Collect the transitions for each field and the final return to base
         List<SequentialTransition> transitions = new ArrayList<>();
@@ -115,6 +115,11 @@ public class ApplicationController {
         // Execute the transitions sequentially
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
+        // Add a listener to the last transition (drone returns to base)
+        returnToBase.setOnFinished(event -> {
+            statusLabel.setText("System ready.");
+        });
+        // Play the animation
         allTransitions.play();
     }
 }

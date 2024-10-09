@@ -41,8 +41,6 @@
       </MenuBar>
       <ToolBar layoutY="25.0" prefHeight="40.0" prefWidth="1062.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="25.0">
         <items>
-            <Button mnemonicParsing="false" text="Manage Items" />
-            <Button mnemonicParsing="false" text="Edit Flight Plan" />
             <ComboBox fx:id="itemTypeComboBox">
                 <items>
                     <FXCollections fx:factory="observableArrayList">
@@ -55,7 +53,8 @@
                 </items>
             </ComboBox>
             <Button text="Add Item" onAction="#addItemToPane" />
-            <Button onAction="#onIrrigate" text="Irrigate" />
+            <Button onAction="#onCropDataCollect" text="Collect Crop Growth Data" />
+            <Button mnemonicParsing="false" text="Edit Flight Plan" />
         </items>
       </ToolBar>
       <SplitPane dividerPositions="0.5" layoutY="65.0" prefHeight="583.0" prefWidth="1062.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="65.0">
@@ -87,7 +86,7 @@
                         <NumberAxis side="LEFT" />
                      </yAxis>
                   </LineChart>
-                  <Label layoutX="56.0" layoutY="456.0" prefHeight="17.0" prefWidth="74.0" fx:id="statusLabel" text="System ready." />
+                  <Label layoutX="56.0" layoutY="456.0" prefHeight="17.0" prefWidth="200" fx:id="statusLabel" text="System ready." />
                   <Text layoutX="14.0" layoutY="469.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
                </children>
             </AnchorPane>
