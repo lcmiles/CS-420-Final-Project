@@ -12,21 +12,14 @@ public class DroneAnimation {
         this.startX = droneView.getLayoutX();
         this.startY = droneView.getLayoutY();
     }
-    public void moveDrone(double taskX, double taskY) {
-        // First transition: move to the task location
+    public SequentialTransition moveDrone(double taskX, double taskY) {
         TranslateTransition moveToTask = new TranslateTransition();
         moveToTask.setDuration(Duration.seconds(2));
-        moveToTask.setToX(taskX - startX); // Relative to the starting point
-        moveToTask.setToY(taskY - startY);
+        moveToTask.setToX(taskX - droneView.getLayoutX()); // Relative to current position
+        moveToTask.setToY(taskY - droneView.getLayoutY());
         moveToTask.setNode(droneView);
-        // Second transition: move back to the starting position
-        TranslateTransition returnToStart = new TranslateTransition();
-        returnToStart.setDuration(Duration.seconds(2));
-        returnToStart.setToX(0); // Return to original X (relative to the task position)
-        returnToStart.setToY(0); // Return to original Y
-        returnToStart.setNode(droneView);
-        // Sequential transition to first move to task, then return
-        SequentialTransition sequentialTransition = new SequentialTransition(moveToTask, returnToStart);
-        sequentialTransition.play();
+        // Sequential transition for single movement
+        SequentialTransition sequentialTransition = new SequentialTransition(moveToTask);
+        return sequentialTransition;
     }
 }

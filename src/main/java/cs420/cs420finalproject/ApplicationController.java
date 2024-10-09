@@ -4,8 +4,9 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
+import javafx.animation.SequentialTransition;
 import java.util.ArrayList;
 import java.util.List;
 public class ApplicationController {
@@ -15,53 +16,56 @@ public class ApplicationController {
     private ComboBox<String> itemTypeComboBox; // Dropdown for item types
     @FXML
     private Pane dronePane; // Pane for displaying the drone and draggable items
-    private List<Circle> drones = new ArrayList<>(); // List to store visual drone representations
+    private Circle animatedDrone; // A visual drone object
+    private Rectangle droneBase; // The drone base where the drone returns
+    private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
     @FXML
     public void initialize() {
         statusLabel.setText("System ready.");
         itemTypeComboBox.getSelectionModel().selectFirst(); // Set default item type
     }
-    @FXML
-    private void onCollectData() {
-        statusLabel.setText("Collecting data...");
-        DatabaseConnection.collectData();
-        statusLabel.setText("Data collection completed.");
-    }
-    @FXML
-    private void onViewData() {
-        statusLabel.setText("Viewing data...");
-    }
-    @FXML
-    private void onIrrigate() {
-        statusLabel.setText("Irrigating...");
-        if (!drones.isEmpty()) {
-            Circle drone = drones.get(0);
-            DroneAnimation droneAnim = new DroneAnimation(drone);
-            droneAnim.moveDrone(200, 300); // Coordinates for the irrigation task
-        }
-    }
-    // Method to add a new drone to the right-side panel
-    @FXML
-    public void addDroneToPane() {
-        Circle newDrone = new Circle(10); // A drone represented as a circle, radius 10
-        newDrone.setLayoutX(50); // Initial X position
-        newDrone.setLayoutY(50); // Initial Y position
-        drones.add(newDrone); // Add the drone to the list
-        dronePane.getChildren().add(newDrone); // Add it to the Pane
-    }
     // Method to add a draggable item to the Pane based on the selected type
     @FXML
     public void addItemToPane() {
         String itemType = itemTypeComboBox.getValue();
-        Rectangle item = createDraggableItem(itemType);
-        dronePane.getChildren().add(item); // Add to the pane
+        if (itemType.equals("Drone")) {
+            addDroneToPane(); // Add animated drone
+        } else if (itemType.equals("Drone Base")) {
+            addDroneBase(); // Add the drone base
+        } else {
+            Rectangle item = createDraggableItem(itemType);
+            dronePane.getChildren().add(item); // Add to the pane
+            if (itemType.equals("Field")) {
+                fieldItems.add(item); // Track field items
+            }
+        }
     }
-    // Method to create a draggable Rectangle item for the selected type
+    // Method to add the animated drone to the pane
+    private void addDroneToPane() {
+        if (animatedDrone == null) { // Ensure only one drone is added
+            animatedDrone = new Circle(10); // A drone represented as a circle, radius 10
+            animatedDrone.setLayoutX(50); // Initial X position
+            animatedDrone.setLayoutY(50); // Initial Y position
+            dronePane.getChildren().add(animatedDrone); // Add to the Pane
+        }
+    }
+    // Method to add the drone base
+    private void addDroneBase() {
+        if (droneBase == null) { // Ensure only one base is added
+            droneBase = new Rectangle(50, 50);
+            droneBase.setLayoutX(350); // Position for the drone base
+            droneBase.setLayoutY(350);
+            droneBase.setStyle("-fx-fill: brown;");
+            dronePane.getChildren().add(droneBase);
+        }
+        makeDraggable(droneBase);
+    }
+    // Method to create a draggable item (Field, Pasture, Irrigation)
     private Rectangle createDraggableItem(String itemType) {
         Rectangle item = new Rectangle(50, 50); // Default size
         item.setLayoutX(100); // Starting position
         item.setLayoutY(100);
-        // Assign a unique color or label based on the type
+        // Assign a unique color based on the type
         switch (itemType) {
             case "Field":
                 item.setStyle("-fx-fill: green;");
@@ -72,18 +76,11 @@ public class ApplicationController {
             case "Irrigation":
                 item.setStyle("-fx-fill: blue;");
                 break;
-            case "Drone":
-                item.setStyle("-fx-fill: gray;");
-                break;
-            case "Drone Base":
-                item.setStyle("-fx-fill: brown;");
-                break;
         }
-        // Make the item draggable
         makeDraggable(item);
         return item;
     }
-    // Method to make an item draggable
+    // Make an item draggable
     private void makeDraggable(Rectangle item) {
         final double[] offsetX = {0};
         final double[] offsetY = {0};
@@ -95,5 +92,29 @@ public class ApplicationController {
             item.setLayoutX(event.getSceneX() - offsetX[0]);
             item.setLayoutY(event.getSceneY() - offsetY[0]);
         });
+    }
+    // Method to animate the drone to each field item, then return to the base
+    @FXML
+    private void onIrrigate() {
+        if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
+            statusLabel.setText("Add a drone, base, and fields first.");
+            return;
+        }
+        statusLabel.setText("Irrigating...");
+        DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
+        // Collect the transitions for each field and the final return to base
+        List<SequentialTransition> transitions = new ArrayList<>();
+        // Animate the drone to each field
+        for (Rectangle field : fieldItems) {
+            SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
+            transitions.add(moveToField);
+        }
+        // Finally, animate the drone to return to the base
+        SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
+        transitions.add(returnToBase);
+        // Execute the transitions sequentially
+        SequentialTransition allTransitions = new SequentialTransition();
+        allTransitions.getChildren().addAll(transitions);
+        allTransitions.play();
     }
 }
