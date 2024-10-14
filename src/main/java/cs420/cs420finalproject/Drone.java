@@ -4,13 +4,11 @@ public class Drone {
 
     private int droneID;
     private String status;
-    private double batteryLevel;
     private String currentLocation;
 
-    public Drone(int droneID, String status, double batteryLevel, String currentLocation) {
+    public Drone(int droneID, String status, String currentLocation) {
         this.droneID = droneID;
         this.status = status;
-        this.batteryLevel = batteryLevel;
         this.currentLocation = currentLocation;
     }
 
@@ -29,14 +27,6 @@ public class Drone {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public double getBatteryLevel() {
-        return batteryLevel;
-    }
-
-    public void setBatteryLevel(double batteryLevel) {
-        this.batteryLevel = batteryLevel;
     }
 
     public String getCurrentLocation() {

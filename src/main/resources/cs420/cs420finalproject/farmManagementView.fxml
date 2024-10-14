@@ -19,83 +19,83 @@
 <?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="648.0" prefWidth="1062.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.ApplicationController">
-   <children>
-      <MenuBar prefHeight="25.0" prefWidth="1062.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-        <menus>
-          <Menu mnemonicParsing="false" text="File">
+    <children>
+        <MenuBar prefHeight="25.0" prefWidth="1062.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <menus>
+                <Menu mnemonicParsing="false" text="File">
+                    <items>
+                        <MenuItem mnemonicParsing="false" text="Close" />
+                    </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Edit">
+                    <items>
+                        <MenuItem mnemonicParsing="false" text="Delete" />
+                    </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Help">
+                    <items>
+                        <MenuItem mnemonicParsing="false" text="About" />
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
+        <ToolBar layoutY="25.0" prefHeight="40.0" prefWidth="1062.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="25.0">
             <items>
-              <MenuItem mnemonicParsing="false" text="Close" />
+                <ComboBox fx:id="itemTypeComboBox">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="Field" />
+                            <String fx:value="Pasture" />
+                            <String fx:value="Irrigation" />
+                            <String fx:value="Drone" />
+                            <String fx:value="Drone Base" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+                <Button text="Add Item" onAction="#addItemToPane" />
+                <Button onAction="#onCropDataCollect" text="Collect Crop Growth Data" />
+                <Button mnemonicParsing="false" text="Edit Flight Plan" />
             </items>
-          </Menu>
-          <Menu mnemonicParsing="false" text="Edit">
+        </ToolBar>
+        <SplitPane dividerPositions="0.5" layoutY="65.0" prefHeight="583.0" prefWidth="1062.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="65.0">
             <items>
-              <MenuItem mnemonicParsing="false" text="Delete" />
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="527.0" prefWidth="528.0">
+                    <children>
+                        <TextArea editable="false" layoutY="475.0" prefHeight="106.0" prefWidth="528.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="475.0" />
+                        <LineChart fx:id="growthLineChart" layoutX="14.0" layoutY="14.0" prefHeight="150.0" prefWidth="501.0">
+                            <xAxis>
+                                <CategoryAxis side="BOTTOM" />
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis side="LEFT" />
+                            </yAxis>
+                        </LineChart>
+                        <LineChart layoutX="14.0" layoutY="164.0" prefHeight="150.0" prefWidth="501.0">
+                            <xAxis>
+                                <CategoryAxis side="BOTTOM" />
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis side="LEFT" />
+                            </yAxis>
+                        </LineChart>
+                        <LineChart layoutX="14.0" layoutY="314.0" prefHeight="150.0" prefWidth="501.0">
+                            <xAxis>
+                                <CategoryAxis side="BOTTOM" />
+                            </xAxis>
+                            <yAxis>
+                                <NumberAxis side="LEFT" />
+                            </yAxis>
+                        </LineChart>
+                        <Label layoutX="56.0" layoutY="456.0" prefHeight="17.0" prefWidth="200" fx:id="statusLabel" text="System ready." />
+                        <Text layoutX="14.0" layoutY="469.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
+                    </children>
+                </AnchorPane>
+                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="581.0" prefWidth="563.0">
+                    <children>
+                        <Pane fx:id="dronePane" prefHeight="581.0" prefWidth="563.0" style="-fx-border-color: black;" />
+                    </children>
+                </AnchorPane>
             </items>
-          </Menu>
-          <Menu mnemonicParsing="false" text="Help">
-            <items>
-              <MenuItem mnemonicParsing="false" text="About" />
-            </items>
-          </Menu>
-        </menus>
-      </MenuBar>
-      <ToolBar layoutY="25.0" prefHeight="40.0" prefWidth="1062.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="25.0">
-        <items>
-            <ComboBox fx:id="itemTypeComboBox">
-                <items>
-                    <FXCollections fx:factory="observableArrayList">
-                        <String fx:value="Field" />
-                        <String fx:value="Pasture" />
-                        <String fx:value="Irrigation" />
-                        <String fx:value="Drone" />
-                        <String fx:value="Drone Base" />
-                    </FXCollections>
-                </items>
-            </ComboBox>
-            <Button text="Add Item" onAction="#addItemToPane" />
-            <Button onAction="#onCropDataCollect" text="Collect Crop Growth Data" />
-            <Button mnemonicParsing="false" text="Edit Flight Plan" />
-        </items>
-      </ToolBar>
-      <SplitPane dividerPositions="0.5" layoutY="65.0" prefHeight="583.0" prefWidth="1062.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="65.0">
-        <items>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="527.0" prefWidth="528.0">
-               <children>
-                  <TextArea editable="false" layoutY="475.0" prefHeight="106.0" prefWidth="528.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="475.0" />
-                  <LineChart layoutX="14.0" layoutY="14.0" prefHeight="150.0" prefWidth="501.0">
-                    <xAxis>
-                      <CategoryAxis side="BOTTOM" />
-                    </xAxis>
-                    <yAxis>
-                      <NumberAxis side="LEFT" />
-                    </yAxis>
-                  </LineChart>
-                  <LineChart layoutX="14.0" layoutY="164.0" prefHeight="150.0" prefWidth="501.0">
-                     <xAxis>
-                        <CategoryAxis side="BOTTOM" />
-                     </xAxis>
-                     <yAxis>
-                        <NumberAxis side="LEFT" />
-                     </yAxis>
-                  </LineChart>
-                  <LineChart layoutX="14.0" layoutY="314.0" prefHeight="150.0" prefWidth="501.0">
-                     <xAxis>
-                        <CategoryAxis side="BOTTOM" />
-                     </xAxis>
-                     <yAxis>
-                        <NumberAxis side="LEFT" />
-                     </yAxis>
-                  </LineChart>
-                  <Label layoutX="56.0" layoutY="456.0" prefHeight="17.0" prefWidth="200" fx:id="statusLabel" text="System ready." />
-                  <Text layoutX="14.0" layoutY="469.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
-               </children>
-            </AnchorPane>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="581.0" prefWidth="563.0">
-               <children>
-                   <Pane fx:id="dronePane" prefHeight="581.0" prefWidth="563.0" style="-fx-border-color: black;" />
-               </children>
-            </AnchorPane>
-        </items>
-      </SplitPane>
-   </children>
+        </SplitPane>
+    </children>
 </AnchorPane>
