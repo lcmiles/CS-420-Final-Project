@@ -1,4 +1,5 @@
 package cs420.cs420finalproject;
+
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -12,27 +13,38 @@ import javafx.animation.SequentialTransition;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import javafx.scene.chart.LineChart;
-import javafx.scene.chart.XYChart;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+
 public class ApplicationController {
+
     @FXML
     private Label statusLabel;
+
     @FXML
     private ComboBox<String> itemTypeComboBox; // Dropdown for item types
+
     @FXML
     private Pane dronePane; // Pane for displaying the drone and draggable items
     private Circle animatedDrone; // A visual drone object
     private Rectangle droneBase; // The drone base where the drone returns
     private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
     private Map<String, CropGrowthData> cropDataMap = new HashMap<>();
+
     @FXML
     private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
+
     @FXML
     public void initialize() {
         statusLabel.setText("System ready.");
         itemTypeComboBox.getSelectionModel().selectFirst(); // Set default item type
+        // Load saved crop data from the database
+        List<CropGrowthData> savedCropData = DatabaseConnection.getCropGrowthData();
+        for (CropGrowthData data : savedCropData) {
+            cropDataMap.put(data.getFieldId(), data); // Initialize the map with saved data
+        }
     }
+
     // Method to add a draggable item to the Pane based on the selected type
     @FXML
     public void addItemToPane() {
@@ -49,6 +61,7 @@ public class ApplicationController {
             }
         }
     }
+
     // Method to add the animated drone to the pane
     private void addDroneToPane() {
         if (animatedDrone == null) { // Ensure only one drone is added
@@ -58,6 +71,7 @@ public class ApplicationController {
             dronePane.getChildren().add(animatedDrone); // Add to the Pane
         }
     }
+
     // Method to add the drone base
     private void addDroneBase() {
         if (droneBase == null) { // Ensure only one base is added
@@ -69,6 +83,7 @@ public class ApplicationController {
         }
         makeDraggable(droneBase);
     }
+
     // Method to create a draggable item (Field, Pasture, Irrigation)
     private Rectangle createDraggableItem(String itemType) {
         Rectangle item = new Rectangle(50, 50); // Default size
@@ -89,6 +104,7 @@ public class ApplicationController {
         makeDraggable(item);
         return item;
     }
+
     // Make an item draggable
     private void makeDraggable(Rectangle item) {
         final double[] offsetX = {0};
@@ -102,6 +118,7 @@ public class ApplicationController {
             item.setLayoutY(event.getSceneY() - offsetY[0]);
         });
     }
+
     @FXML
     private void onCropDataCollect() {
         if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
@@ -111,34 +128,24 @@ public class ApplicationController {
         statusLabel.setText("Collecting crop growth data...");
         DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
         // Create a timestamp for the data collection
-        String timestamp = new SimpleDateFormat("dd/mm/yy HH:mm:ss").format(new Date());
-        // Collect the transitions for each field and the final return to base
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
         List<SequentialTransition> transitions = new ArrayList<>();
         for (Rectangle field : fieldItems) {
-            // Retrieve existing CropGrowthData or create a new one
             CropGrowthData cropData = findOrCreateCropData(field);
-            cropData.increaseGrowthLevel(); // Increase the growth level
-            // Set the timestamp for the cropData
-            cropData.setTimestamp(timestamp); // Ensure you have a setter for timestamp in CropGrowthData
-            // Create a transition to move the drone to the field
+            // If the crop has been harvested, avoid immediately setting it back to 10.
+            cropData.increaseGrowthLevel();
+            cropData.setTimestamp(timestamp); // Update the timestamp
             SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
-            // Add a listener to the transition to insert data into the database after the drone moves to the field
             moveToField.setOnFinished(event -> {
-                DatabaseConnection.insertCropGrowthData(cropData); // Insert the crop data into the database
+                DatabaseConnection.insertCropGrowthData(cropData); // Update database with new data
             });
             transitions.add(moveToField);
         }
-        // Finally, animate the drone to return to the base
         SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
         transitions.add(returnToBase);
-        // Add a listener to the last transition (drone returns to base)
-        returnToBase.setOnFinished(event -> {
-            statusLabel.setText("System ready.");
-        });
-        // Execute the transitions sequentially
+        returnToBase.setOnFinished(event -> statusLabel.setText("System ready."));
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
-        // Play the animation
         allTransitions.play();
     }
     
@@ -183,4 +190,21 @@ public class ApplicationController {
             e.printStackTrace();
         }
     }
+
+    // Method to handle the "Harvest Crops" button action
+    @FXML
+    private void handleHarvestCrops() {
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+        for (Rectangle field : fieldItems) {
+            CropGrowthData cropData = findOrCreateCropData(field);
+            if (cropData.getGrowthLevel() == 10) {
+                cropData.setGrowthLevel(0); // Reset growth level
+                cropData.setTimestamp(new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date())); // Update timestamp
+                DatabaseConnection.insertCropGrowthData(cropData); // Save to database
+                System.out.println("Crops harvested.");
+                statusLabel.setText("Crops harvested. System ready.");
+            }
+        }
+    }
+
 }

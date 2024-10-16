@@ -27,7 +27,7 @@ public class GrowthChartController {
         for (CropGrowthData data : growthDataList) {
             // Get or create the series for the current field
             XYChart.Series<String, Number> series = seriesMap.getOrDefault(data.getFieldId(), new XYChart.Series<>());
-            series.setName("Field " + data.getFieldId()); // Name the series after the field
+            series.setName(data.getFieldId()); // Name the series after the field
             series.getData().add(new XYChart.Data<>(data.getTimestamp(), data.getGrowthLevel()));
             // Put the series back into the map
             seriesMap.put(data.getFieldId(), series);
