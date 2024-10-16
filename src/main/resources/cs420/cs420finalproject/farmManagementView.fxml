@@ -61,31 +61,8 @@
             <items>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="527.0" prefWidth="528.0">
                     <children>
+                        <Button fx:id="viewChartButton" text="View Growth Chart" onAction="#onViewChartButtonClicked"/>
                         <TextArea editable="false" layoutY="475.0" prefHeight="106.0" prefWidth="528.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="475.0" />
-                        <LineChart fx:id="growthLineChart" layoutX="14.0" layoutY="14.0" prefHeight="150.0" prefWidth="501.0">
-                            <xAxis>
-                                <CategoryAxis side="BOTTOM" />
-                            </xAxis>
-                            <yAxis>
-                                <NumberAxis side="LEFT" />
-                            </yAxis>
-                        </LineChart>
-                        <LineChart layoutX="14.0" layoutY="164.0" prefHeight="150.0" prefWidth="501.0">
-                            <xAxis>
-                                <CategoryAxis side="BOTTOM" />
-                            </xAxis>
-                            <yAxis>
-                                <NumberAxis side="LEFT" />
-                            </yAxis>
-                        </LineChart>
-                        <LineChart layoutX="14.0" layoutY="314.0" prefHeight="150.0" prefWidth="501.0">
-                            <xAxis>
-                                <CategoryAxis side="BOTTOM" />
-                            </xAxis>
-                            <yAxis>
-                                <NumberAxis side="LEFT" />
-                            </yAxis>
-                        </LineChart>
                         <Label layoutX="56.0" layoutY="456.0" prefHeight="17.0" prefWidth="200" fx:id="statusLabel" text="System ready." />
                         <Text layoutX="14.0" layoutY="469.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
                     </children>

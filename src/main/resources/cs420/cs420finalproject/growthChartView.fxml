@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.GrowthChartController">
+    <LineChart fx:id="growthLineChart">
+        <xAxis>
+            <CategoryAxis label="Timestamp"/>
+        </xAxis>
+        <yAxis>
+            <NumberAxis label="Growth Level" />
+        </yAxis>
+    </LineChart>
+</VBox>
