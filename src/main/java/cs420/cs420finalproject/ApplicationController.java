@@ -1,8 +1,8 @@
 package cs420.cs420finalproject;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
@@ -27,6 +27,8 @@ public class ApplicationController {
     private Circle animatedDrone; // A visual drone object
     private Rectangle droneBase; // The drone base where the drone returns
     private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
+
+    private Map<String, CropGrowthData> cropDataMap = new HashMap<>();
 
     @FXML
     private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
@@ -122,7 +124,7 @@ public class ApplicationController {
         DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
 
         // Create a timestamp for the data collection
-        String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+        String timestamp = new SimpleDateFormat("dd/mm/yy HH:mm:ss").format(new Date());
 
         // Collect the transitions for each field and the final return to base
         List<SequentialTransition> transitions = new ArrayList<>();
@@ -166,18 +168,26 @@ public class ApplicationController {
     }
 
     // Find existing CropGrowthData or create a new one
-    private CropGrowthData findOrCreateCropData(Rectangle field) {
+    public CropGrowthData findOrCreateCropData(Rectangle field) {
+        // Create a unique field ID based on the field's index
         String fieldId = "Field " + fieldItems.indexOf(field);
 
-        // Check if we already have data for this field
-        for (CropGrowthData data : DatabaseConnection.getCropGrowthData()) {
-            if (data.getFieldId().equals(fieldId)) {
-                return data; // Return existing data with its growth level
-            }
+        // Check if the crop data already exists in the map
+        if (cropDataMap.containsKey(fieldId)) {
+            return cropDataMap.get(fieldId); // Return the existing CropGrowthData
         }
 
-        // If no existing data, create new with growth level 0
-        return new CropGrowthData(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), fieldId, 0);
+        // If no data exists, create new CropGrowthData with initial values
+        CropGrowthData newData = new CropGrowthData(
+                new SimpleDateFormat("dd/mm/yy HH:mm:ss").format(new Date()), // Timestamp
+                fieldId, // Field ID
+                0 // Initial growth level set to 0
+        );
+
+        // Store the newly created CropGrowthData in the map for future use
+        cropDataMap.put(fieldId, newData);
+
+        return newData;
     }
 
 
@@ -193,18 +203,18 @@ public class ApplicationController {
 
         for (CropGrowthData data : growthDataList) {
             // Get or create the series for the current field
-            XYChart.Series<String, Number> series = seriesMap.getOrDefault(data.getFieldId(), new XYChart.Series<>());
-            series.setName("Field " + data.getFieldId()); // Name the series after the field
+            XYChart.Series<String, Number> series = seriesMap.get(data.getFieldId());
+            if (series == null) {
+                series = new XYChart.Series<>();
+                series.setName("Field " + data.getFieldId()); // Name the series after the field
+                seriesMap.put(data.getFieldId(), series);
+            }
             series.getData().add(new XYChart.Data<>(data.getTimestamp(), data.getGrowthLevel()));
-
-            // Put the series back into the map
-            seriesMap.put(data.getFieldId(), series);
         }
 
         // Add all series to the chart
         growthLineChart.getData().addAll(seriesMap.values());
     }
-
 
     private void updateGrowthChart() {
         List<CropGrowthData> growthData = DatabaseConnection.getCropGrowthData();
