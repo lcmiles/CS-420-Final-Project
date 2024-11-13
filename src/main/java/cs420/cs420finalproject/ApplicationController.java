@@ -88,17 +88,18 @@ public class ApplicationController {
     }
 
     private void addItemToPaneFromDatabase(Item item) {
-        // If the item is of type "drone", add the drone to the pane
         if ("drone".equals(item.getType())) {
             addDroneToPane();
+        } else if ("drone base".equals(item.getType())) {
+            addDroneBase();
         } else {
             // Otherwise, handle other items as usual
             Rectangle itemRectangle = createVisualItem(item.getType());
             itemRectangle.setLayoutX(item.getX());
             itemRectangle.setLayoutY(item.getY());
             dronePane.getChildren().add(itemRectangle);
-            if (item.getType().equals("Field")) {
-                fieldItems.add(itemRectangle);
+            if ("Field".equals(item.getType())) {
+                fieldItems.add(itemRectangle); // Add field items to the list
             }
         }
     }
@@ -112,6 +113,18 @@ public class ApplicationController {
             dronePane.getChildren().add(animatedDrone); // Add to the Pane
         }
     }
+
+    // Method to add the drone base
+    private void addDroneBase() {
+        if (droneBase == null) { // Ensure only one base is added
+            droneBase = new Rectangle(50, 50);
+            droneBase.setLayoutX(350); // Position for the drone base
+            droneBase.setLayoutY(350);
+            droneBase.setStyle("-fx-fill: brown;");
+            dronePane.getChildren().add(droneBase);
+        }
+    }
+
 
     private Rectangle createVisualItem(String itemType) {
         Rectangle item = new Rectangle(50, 50); // Default size
