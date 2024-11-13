@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
@@ -19,10 +20,12 @@ import java.util.*;
 import javafx.scene.chart.LineChart;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import java.io.PrintStream;
 
 public class ApplicationController {
 
     @FXML private Label statusLabel;
+    @FXML private TextArea logs;
     @FXML private Pane dronePane;
     private Circle animatedDrone;
     private Rectangle droneBase;
@@ -35,7 +38,7 @@ public class ApplicationController {
     @FXML private TableColumn<Item, Double> xColumn;
     @FXML private TableColumn<Item, Double> yColumn;
 
-    @FXML public void initialize() {
+    public void initialize() {
         statusLabel.setText("System ready.");
         List<CropGrowthData> savedCropData = DatabaseConnection.getCropGrowthData();
         for (CropGrowthData data : savedCropData) {
@@ -47,6 +50,8 @@ public class ApplicationController {
         }
         setupTableColumns();
         loadItemsIntoTable();
+        // Redirect System.out to the TextArea
+        System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
     private void setupTableColumns() {
