@@ -1,73 +1,120 @@
 package cs420.cs420finalproject;
 
+import javafx.animation.SequentialTransition;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.animation.SequentialTransition;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import javafx.scene.chart.LineChart;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import java.io.PrintStream;
 
 public class ApplicationController {
 
-    @FXML
-    private Label statusLabel;
-
-    @FXML
-    private ComboBox<String> itemTypeComboBox; // Dropdown for item types
-
-    @FXML
-    private Pane dronePane; // Pane for displaying the drone and draggable items
-    private Circle animatedDrone; // A visual drone object
-    private Rectangle droneBase; // The drone base where the drone returns
+    @FXML private Label statusLabel;
+    @FXML private TextArea logs;
+    @FXML private Pane dronePane;
+    private Circle animatedDrone;
+    private Rectangle droneBase;
     private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
-    private Map<String, CropGrowthData> cropDataMap = new HashMap<>();
+    private Map<String, CropGrowthData> cropDataMap = new HashMap<>(); // Mapping of crop data
+    @FXML private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
+    @FXML private TableView<Item> itemTableView; // TableView to display all items
+    @FXML private TableColumn<Item, String> nameColumn;
+    @FXML private TableColumn<Item, String> typeColumn;
+    @FXML private TableColumn<Item, Double> xColumn;
+    @FXML private TableColumn<Item, Double> yColumn;
 
-    @FXML
-    private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
-
-    @FXML
     public void initialize() {
         statusLabel.setText("System ready.");
-        itemTypeComboBox.getSelectionModel().selectFirst(); // Set default item type
-        // Load saved crop data from the database
         List<CropGrowthData> savedCropData = DatabaseConnection.getCropGrowthData();
         for (CropGrowthData data : savedCropData) {
-            cropDataMap.put(data.getFieldId(), data); // Initialize the map with saved data
+            cropDataMap.put(data.getFieldId(), data);
+        }
+        List<Item> savedItems = DatabaseConnection.getItems();
+        for (Item item : savedItems) {
+            addItemToPaneFromDatabase(item);
+        }
+        setupTableColumns();
+        loadItemsIntoTable();
+        // Redirect System.out to the TextArea
+        System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
+    }
+
+    private void setupTableColumns() {
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
+        xColumn.setCellValueFactory(new PropertyValueFactory<>("x"));
+        yColumn.setCellValueFactory(new PropertyValueFactory<>("y"));
+    }
+
+    private void loadItemsIntoTable() {
+        ObservableList<Item> items = FXCollections.observableArrayList(DatabaseConnection.getItems());
+        itemTableView.setItems(items);
+    }
+
+    @FXML public void addItemToPane() {
+        openItemDetailsPopup();
+    }
+
+    private void openItemDetailsPopup() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("addItemView.fxml"));
+            Parent root = fxmlLoader.load();
+            AddItemController controller = fxmlLoader.getController();
+            Stage stage = new Stage();
+            stage.setTitle("Add New Item");
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.showAndWait();
+            if (controller.isItemCreated()) {
+                Item item = controller.getItem();
+                DatabaseConnection.insertItem(item);
+                addItemToPaneFromDatabase(item);
+                loadItemsIntoTable();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
-    // Method to add a draggable item to the Pane based on the selected type
-    @FXML
-    public void addItemToPane() {
-        String itemType = itemTypeComboBox.getValue();
-        if (itemType.equals("Drone")) {
-            addDroneToPane(); // Add animated drone
-        } else if (itemType.equals("Drone Base")) {
-            addDroneBase(); // Add the drone base
+    private void addItemToPaneFromDatabase(Item item) {
+        if ("drone".equals(item.getType())) {
+            addDroneToPane(item.getX(),item.getY());
+        } else if ("drone base".equals(item.getType())) {
+            addDroneBase();
         } else {
-            Rectangle item = createDraggableItem(itemType);
-            dronePane.getChildren().add(item); // Add to the pane
-            if (itemType.equals("Field")) {
-                fieldItems.add(item); // Track field items
+            // Otherwise, handle other items as usual
+            Rectangle itemRectangle = createVisualItem(item.getType());
+            itemRectangle.setLayoutX(item.getX());
+            itemRectangle.setLayoutY(item.getY());
+            dronePane.getChildren().add(itemRectangle);
+            if ("field".equals(item.getType())) {
+                fieldItems.add(itemRectangle); // Add field items to the list
             }
         }
     }
 
     // Method to add the animated drone to the pane
-    private void addDroneToPane() {
+    private void addDroneToPane(double x, double y) {
         if (animatedDrone == null) { // Ensure only one drone is added
             animatedDrone = new Circle(10); // A drone represented as a circle, radius 10
-            animatedDrone.setLayoutX(50); // Initial X position
-            animatedDrone.setLayoutY(50); // Initial Y position
+            animatedDrone.setLayoutX(x); // Initial X position
+            animatedDrone.setLayoutY(y); // Initial Y position
             dronePane.getChildren().add(animatedDrone); // Add to the Pane
         }
     }
@@ -81,109 +128,79 @@ public class ApplicationController {
             droneBase.setStyle("-fx-fill: brown;");
             dronePane.getChildren().add(droneBase);
         }
-        makeDraggable(droneBase);
     }
 
-    // Method to create a draggable item (Field, Pasture, Irrigation)
-    private Rectangle createDraggableItem(String itemType) {
+
+    private Rectangle createVisualItem(String itemType) {
         Rectangle item = new Rectangle(50, 50); // Default size
-        item.setLayoutX(100); // Starting position
-        item.setLayoutY(100);
-        // Assign a unique color based on the type
         switch (itemType) {
-            case "Field":
-                item.setStyle("-fx-fill: green;");
-                break;
-            case "Pasture":
-                item.setStyle("-fx-fill: lightgreen;");
-                break;
-            case "Irrigation":
-                item.setStyle("-fx-fill: blue;");
-                break;
+            case "field": item.setStyle("-fx-fill: green;"); break;
+            case "pasture": item.setStyle("-fx-fill: lightgreen;"); break;
+            default: item.setStyle("-fx-fill: gray;");
         }
-        makeDraggable(item);
+        item.setStyle(item.getStyle() + " -fx-stroke: black; -fx-stroke-width: 2;");
         return item;
     }
 
-    // Make an item draggable
-    private void makeDraggable(Rectangle item) {
-        final double[] offsetX = {0};
-        final double[] offsetY = {0};
-        item.setOnMousePressed(event -> {
-            offsetX[0] = event.getSceneX() - item.getLayoutX();
-            offsetY[0] = event.getSceneY() - item.getLayoutY();
-        });
-        item.setOnMouseDragged(event -> {
-            item.setLayoutX(event.getSceneX() - offsetX[0]);
-            item.setLayoutY(event.getSceneY() - offsetY[0]);
-        });
-    }
-
-    @FXML
-    private void onCropDataCollect() {
+    @FXML private void onCropDataCollect() {
         if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
             statusLabel.setText("Add a drone, base, and fields first.");
             return;
         }
         statusLabel.setText("Collecting crop growth data...");
+        // Initialize the drone animation
         DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
-        // Create a timestamp for the data collection
         String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+        // Create transitions for moving the drone to each field and then back to the base
         List<SequentialTransition> transitions = new ArrayList<>();
+        // Loop through field items and create a move transition for each field
         for (Rectangle field : fieldItems) {
             CropGrowthData cropData = findOrCreateCropData(field);
-            // If the crop has been harvested, avoid immediately setting it back to 10.
             cropData.increaseGrowthLevel();
-            cropData.setTimestamp(timestamp); // Update the timestamp
+            cropData.setTimestamp(timestamp);
+            // Create the transition for moving the drone to the field
             SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
             moveToField.setOnFinished(event -> {
-                DatabaseConnection.insertCropGrowthData(cropData); // Update database with new data
+                // Once the drone reaches the field, insert crop data into the database
+                DatabaseConnection.insertCropGrowthData(cropData);
             });
             transitions.add(moveToField);
         }
+        // Create the transition for the drone to return to the base
         SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
+        returnToBase.setOnFinished(event -> {
+            statusLabel.setText("System ready.");
+        });
         transitions.add(returnToBase);
-        returnToBase.setOnFinished(event -> statusLabel.setText("System ready."));
+        // Combine all transitions and play them sequentially
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
         allTransitions.play();
     }
-    
-    // Find existing CropGrowthData or create a new one
+
     public CropGrowthData findOrCreateCropData(Rectangle field) {
-        // Create a unique field ID based on the field's index
         String fieldId = "Field " + fieldItems.indexOf(field);
-        // Check if the crop data already exists in the map
         if (cropDataMap.containsKey(fieldId)) {
-            return cropDataMap.get(fieldId); // Return the existing CropGrowthData
+            return cropDataMap.get(fieldId);
         }
-        // If no data exists, create new CropGrowthData with initial values
         CropGrowthData newData = new CropGrowthData(
-                new SimpleDateFormat("dd/mm/yy HH:mm:ss").format(new Date()), // Timestamp
-                fieldId, // Field ID
-                0 // Initial growth level set to 0
+                new SimpleDateFormat("dd/mm/yy HH:mm:ss").format(new Date()),
+                fieldId,
+                0
         );
-        // Store the newly created CropGrowthData in the map for future use
         cropDataMap.put(fieldId, newData);
         return newData;
     }
-    
-    // Method to open a popup and view the growth chart
-    @FXML
-    public void onViewChartButtonClicked() {
+
+    @FXML public void onViewChartButtonClicked() {
         try {
-            // Load the FXML for the popup
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("growthChartView.fxml"));
             Parent root = fxmlLoader.load();
-            // Create a new Stage (window)
             Stage stage = new Stage();
             stage.setTitle("Crop Growth Chart");
-            // Set the scene to the loaded FXML
             Scene scene = new Scene(root);
             stage.setScene(scene);
-            // Specify that the popup should be modal (block input to other windows)
             stage.initModality(Modality.APPLICATION_MODAL);
-            // Access the controller of the chart window and update the chart data
             GrowthChartController chartController = fxmlLoader.getController();
             stage.showAndWait();
         } catch (Exception e) {
@@ -191,16 +208,14 @@ public class ApplicationController {
         }
     }
 
-    // Method to handle the "Harvest Crops" button action
-    @FXML
-    private void handleHarvestCrops() {
+    @FXML private void handleHarvestCrops() {
         String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
         for (Rectangle field : fieldItems) {
             CropGrowthData cropData = findOrCreateCropData(field);
             if (cropData.getGrowthLevel() == 10) {
-                cropData.setGrowthLevel(0); // Reset growth level
-                cropData.setTimestamp(new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date())); // Update timestamp
-                DatabaseConnection.insertCropGrowthData(cropData); // Save to database
+                cropData.setGrowthLevel(0);
+                cropData.setTimestamp(timestamp);
+                DatabaseConnection.insertCropGrowthData(cropData);
                 System.out.println("Crops harvested.");
                 statusLabel.setText("Crops harvested. System ready.");
             }
