@@ -51,19 +51,98 @@ public class DatabaseConnection {
         }
     }
 
+    // Insert item into the database, handling recursion for containers
+    public static void insertItem(Item item) {
+        String sql = "INSERT INTO items (name, type, x, y, isContainer) VALUES(?, ?, ?, ?, ?)";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, item.getName());
+            pstmt.setString(2, item.getType());
+            pstmt.setDouble(3, item.getX());
+            pstmt.setDouble(4, item.getY());
+            pstmt.setBoolean(5, item.getIsContainer());
+            pstmt.executeUpdate();
+            System.out.println("Item inserted: " + item.getName());
+            // If this item is a container, recursively insert the contained items
+            if (item.getIsContainer()) {
+                for (Item containedItem : item.getContainedItems()) {
+                    insertItem(containedItem); // Recursive call to insert contained items
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // Method to get items from the database
+    public static List<Item> getItems() {
+        List<Item> items = new ArrayList<>();
+        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+            String sql = "SELECT * FROM items ORDER BY id";
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String name = rs.getString("name");
+                String type = rs.getString("type");
+                double x = rs.getDouble("x");
+                double y = rs.getDouble("y");
+                boolean isContainer = rs.getBoolean("isContainer");
+                Item item;
+                if (isContainer) {
+                    // Fetch contained items for containers (additional logic may be needed here)
+                    item = new Container(name, type, x, y, true, new ArrayList<>());
+                } else {
+                    item = new Item(name, type, x, y, false) {
+                        @Override
+                        public void saveToDatabase() {
+                            insertItem(this); // Save to database
+                        }
+                    };
+                }
+                items.add(item);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving items: " + e.getMessage());
+        }
+        return items;
+    }
+
+    public static Item getItemByName(String name) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM items WHERE name = ?")) {
+            pstmt.setString(1, name);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String type = rs.getString("type");
+                double x = rs.getDouble("x");
+                double y = rs.getDouble("y");
+                boolean isContainer = rs.getBoolean("isContainer");
+                return new Item(name, type, x, y, isContainer) {
+                    @Override
+                    public void saveToDatabase() {
+                        // Save logic for this item
+                    }
+                };
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
+    }
+
     public static void initializeDatabase() {
         try (Connection conn = connect()) {
             if (conn != null) {
-                // Create the drones table
-                String dronesSql = "CREATE TABLE IF NOT EXISTS drones (\n"
-                        + " droneID integer PRIMARY KEY,\n"
-                        + " status text NOT NULL,\n"
-                        + " batteryLevel real,\n"
-                        + " currentLocation text\n"
-                        + ");";
-                conn.createStatement().execute(dronesSql);
 
-                // Create the crop_growth table with the necessary columns
+                // Create the items table
+                String itemsSql = "CREATE TABLE IF NOT EXISTS items (\n" +
+                        " id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
+                        " name TEXT NOT NULL,\n" +
+                        " type TEXT NOT NULL,\n" +
+                        " x REAL NOT NULL,\n" +
+                        " y REAL NOT NULL,\n" +
+                        " isContainer BOOLEAN NOT NULL\n" +
+                        ");";
+                conn.createStatement().execute(itemsSql);
+
+                // Create the crop_growth table
                 String cropGrowthSql = "CREATE TABLE IF NOT EXISTS crop_growth (\n"
                         + " id integer PRIMARY KEY AUTOINCREMENT,\n"
                         + " timestamp text NOT NULL,\n"
@@ -78,5 +157,4 @@ public class DatabaseConnection {
             System.out.println(e.getMessage());
         }
     }
-
 }
