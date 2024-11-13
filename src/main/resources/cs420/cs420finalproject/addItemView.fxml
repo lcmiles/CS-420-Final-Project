@@ -8,7 +8,5 @@
     <TextField fx:id="itemTypeField" promptText="Enter item type" />
     <TextField fx:id="xField" promptText="Enter X coordinate" />
     <TextField fx:id="yField" promptText="Enter Y coordinate" />
-    <TextField fx:id="isContainerField" promptText="Is this a container (true/false)" />
-    <TextField fx:id="parentItemField" promptText="Enter parent item (if any)" />
     <Button text="Save Item" onAction="#onCreateItem" />
 </VBox>

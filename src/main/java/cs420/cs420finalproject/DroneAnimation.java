@@ -1,25 +1,25 @@
 package cs420.cs420finalproject;
+import javafx.animation.Interpolator;
 import javafx.animation.SequentialTransition;
 import javafx.animation.TranslateTransition;
 import javafx.scene.shape.Circle;
 import javafx.util.Duration;
 public class DroneAnimation {
-    private Circle droneView; // Visual representation of the drone
-    private double startX;    // Initial X position
-    private double startY;    // Initial Y position
-    public DroneAnimation(Circle droneView) {
-        this.droneView = droneView;
-        this.startX = droneView.getLayoutX();
-        this.startY = droneView.getLayoutY();
+    private Circle drone;
+    public DroneAnimation(Circle drone) {
+        this.drone = drone;
     }
-    public SequentialTransition moveDrone(double taskX, double taskY) {
-        TranslateTransition moveToTask = new TranslateTransition();
-        moveToTask.setDuration(Duration.seconds(2));
-        moveToTask.setToX(taskX - droneView.getLayoutX()); // Relative to current position
-        moveToTask.setToY(taskY - droneView.getLayoutY());
-        moveToTask.setNode(droneView);
-        // Sequential transition for single movement
-        SequentialTransition sequentialTransition = new SequentialTransition(moveToTask);
+    public SequentialTransition moveDrone(double targetX, double targetY) {
+        // Create a timeline for the animation
+        TranslateTransition moveTransition = new TranslateTransition();
+        moveTransition.setNode(drone);
+        moveTransition.setToX(targetX - drone.getLayoutX());
+        moveTransition.setToY(targetY - drone.getLayoutY());
+        moveTransition.setInterpolator(Interpolator.EASE_BOTH);
+        moveTransition.setCycleCount(1);
+        moveTransition.setDuration(Duration.seconds(2)); // Adjust as needed
+        // Wrap in a SequentialTransition to ensure it can be chained
+        SequentialTransition sequentialTransition = new SequentialTransition(moveTransition);
         return sequentialTransition;
     }
 }
