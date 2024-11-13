@@ -46,18 +46,22 @@
             <items>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="527.0" prefWidth="528.0">
                     <children>
-                        <TableView fx:id="itemTableView" layoutY="303.0" prefHeight="152.0" prefWidth="527.0">
-                            <columns>
-                                <TableColumn fx:id="nameColumn" prefWidth="176.0" text="Name" />
-                                <TableColumn fx:id="typeColumn" prefWidth="154.0" text="Type" />
-                                <TableColumn prefWidth="103.0" text="X Coordinate" fx:id="xColumn" />
-                                <TableColumn fx:id="yColumn" prefWidth="93.0" text="Y Coordinate" />
-                            </columns>
-                        </TableView>
-                        <TextArea editable="false" layoutX="1.0" layoutY="455.0" prefHeight="102.0" prefWidth="527.0" AnchorPane.bottomAnchor="24.0" AnchorPane.leftAnchor="1.0" AnchorPane.rightAnchor="-1.0" AnchorPane.topAnchor="455.0" />
-                        <Label fx:id="statusLabel" layoutX="56.0" layoutY="559.0" prefHeight="17.0" prefWidth="200" text="System ready." />
-                        <Text layoutX="14.0" layoutY="572.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
-                  <Text layoutX="188.0" layoutY="27.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Crop Growth Data" wrappingWidth="152.0" AnchorPane.bottomAnchor="549.482421875" AnchorPane.leftAnchor="188.0" AnchorPane.rightAnchor="187.0" AnchorPane.topAnchor="8.0">
+                  <SplitPane dividerPositions="0.5" layoutX="1.0" layoutY="305.0" orientation="VERTICAL" prefHeight="276.0" prefWidth="527.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="305.0">
+                    <items>
+                              <TableView fx:id="itemTableView" prefHeight="0.0" prefWidth="525.0">
+                                  <columns>
+                                      <TableColumn fx:id="nameColumn" prefWidth="176.0" text="Name" />
+                                      <TableColumn fx:id="typeColumn" prefWidth="154.0" text="Type" />
+                                      <TableColumn prefWidth="103.0" text="X Coordinate" fx:id="xColumn" />
+                                      <TableColumn fx:id="yColumn" prefWidth="93.0" text="Y Coordinate" />
+                                  </columns>
+                              </TableView>
+                              <TextArea editable="false" prefHeight="102.0" prefWidth="527.0" />
+                    </items>
+                  </SplitPane>
+                        <Label fx:id="statusLabel" layoutX="56.0" layoutY="282.0" prefHeight="17.0" prefWidth="200" text="System ready." />
+                        <Text layoutX="14.0" layoutY="295.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
+                  <Text layoutX="188.0" layoutY="27.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Crop Growth Data" wrappingWidth="152.0">
                      <font>
                         <Font size="18.0" />
                      </font>

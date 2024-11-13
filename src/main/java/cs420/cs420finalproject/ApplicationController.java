@@ -89,7 +89,7 @@ public class ApplicationController {
 
     private void addItemToPaneFromDatabase(Item item) {
         if ("drone".equals(item.getType())) {
-            addDroneToPane();
+            addDroneToPane(item.getX(),item.getY());
         } else if ("drone base".equals(item.getType())) {
             addDroneBase();
         } else {
@@ -98,18 +98,18 @@ public class ApplicationController {
             itemRectangle.setLayoutX(item.getX());
             itemRectangle.setLayoutY(item.getY());
             dronePane.getChildren().add(itemRectangle);
-            if ("Field".equals(item.getType())) {
+            if ("field".equals(item.getType())) {
                 fieldItems.add(itemRectangle); // Add field items to the list
             }
         }
     }
 
     // Method to add the animated drone to the pane
-    private void addDroneToPane() {
+    private void addDroneToPane(double x, double y) {
         if (animatedDrone == null) { // Ensure only one drone is added
             animatedDrone = new Circle(10); // A drone represented as a circle, radius 10
-            animatedDrone.setLayoutX(50); // Initial X position
-            animatedDrone.setLayoutY(50); // Initial Y position
+            animatedDrone.setLayoutX(x); // Initial X position
+            animatedDrone.setLayoutY(y); // Initial Y position
             dronePane.getChildren().add(animatedDrone); // Add to the Pane
         }
     }
@@ -129,9 +129,8 @@ public class ApplicationController {
     private Rectangle createVisualItem(String itemType) {
         Rectangle item = new Rectangle(50, 50); // Default size
         switch (itemType) {
-            case "Field": item.setStyle("-fx-fill: green;"); break;
-            case "Pasture": item.setStyle("-fx-fill: lightgreen;"); break;
-            case "Irrigation": item.setStyle("-fx-fill: blue;"); break;
+            case "field": item.setStyle("-fx-fill: green;"); break;
+            case "pasture": item.setStyle("-fx-fill: lightgreen;"); break;
             default: item.setStyle("-fx-fill: gray;");
         }
         item.setStyle(item.getStyle() + " -fx-stroke: black; -fx-stroke-width: 2;");
