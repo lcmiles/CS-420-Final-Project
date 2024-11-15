@@ -20,3 +20,8 @@ public class MainApplication extends Application {
         launch();
     }
 }
+
+//! add drop down with input box for other item type
+//! edit/delete button greyed out until item selected then can do that
+//! edit item options will include option to add item within item (making parent item container class)
+//! key for visualization colors

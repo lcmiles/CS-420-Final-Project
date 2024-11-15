@@ -23,6 +23,12 @@ public class Container extends Item {
     public void saveToDatabase() {
         // Insert container into the database
         DatabaseConnection.insertItem(this);
+
+        // Insert contained items to the database as well
+        for (Item containedItem : containedItems) {
+            DatabaseConnection.insertItem(containedItem);
+            // You may also need to insert the relationship in a junction table, e.g., "contained_items"
+            // Example: DatabaseConnection.insertContainedItem(this, containedItem);
+        }
     }
 }
-

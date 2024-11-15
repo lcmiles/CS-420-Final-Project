@@ -71,8 +71,6 @@ public class AddItemController {
         closePopup();
     }
 
-
-
     @FXML
     private void onContainerCheckBoxChanged() {
         // Enable or disable the ListView based on the CheckBox state
