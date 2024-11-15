@@ -19,6 +19,11 @@ public class Container extends Item {
         return containedItems;
     }
 
+    // New method to check if the container already contains an item
+    public boolean containsItem(Item item) {
+        return containedItems.contains(item);
+    }
+
     @Override
     public void saveToDatabase() {
         // Insert container into the database

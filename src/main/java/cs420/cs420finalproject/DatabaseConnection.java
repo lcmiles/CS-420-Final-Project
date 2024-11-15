@@ -15,7 +15,7 @@ public class DatabaseConnection {
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(DB_URL);
-            System.out.println("Connected to SQLite database.");
+            //System.out.println("Connected to SQLite database.");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -180,7 +180,6 @@ public class DatabaseConnection {
                         " FOREIGN KEY(item_name) REFERENCES items(name)\n" +
                         ");";
                 conn.createStatement().execute(containedItemsSql);
-                System.out.println("Database initialized with contained_items table.");
                 System.out.println("Database initialized.");
             }
         } catch (SQLException e) {

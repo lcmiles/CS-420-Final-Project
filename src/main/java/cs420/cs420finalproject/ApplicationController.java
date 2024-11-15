@@ -7,20 +7,20 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
+import javafx.scene.control.cell.TextFieldTreeCell;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import javafx.scene.chart.LineChart;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 import java.io.PrintStream;
+import java.util.stream.Collectors;
 
 public class ApplicationController {
 
@@ -32,11 +32,7 @@ public class ApplicationController {
     private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
     private Map<String, CropGrowthData> cropDataMap = new HashMap<>(); // Mapping of crop data
     @FXML private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
-    @FXML private TableView<Item> itemTableView; // TableView to display all items
-    @FXML private TableColumn<Item, String> nameColumn;
-    @FXML private TableColumn<Item, String> typeColumn;
-    @FXML private TableColumn<Item, Double> xColumn;
-    @FXML private TableColumn<Item, Double> yColumn;
+    @FXML private TreeView<String> itemTreeView; // TreeView to display all items
 
     public void initialize() {
         statusLabel.setText("System ready.");
@@ -48,22 +44,70 @@ public class ApplicationController {
         for (Item item : savedItems) {
             addItemToPaneFromDatabase(item);
         }
-        setupTableColumns();
-        loadItemsIntoTable();
+        loadItemsIntoTree();
         // Redirect System.out to the TextArea
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
-    private void setupTableColumns() {
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
-        xColumn.setCellValueFactory(new PropertyValueFactory<>("x"));
-        yColumn.setCellValueFactory(new PropertyValueFactory<>("y"));
-    }
+    private void loadItemsIntoTree() {
+        // Create the root item for the TreeView
+        TreeItem<String> rootItem = new TreeItem<>("Items");
+        rootItem.setExpanded(true);
 
-    private void loadItemsIntoTable() {
-        ObservableList<Item> items = FXCollections.observableArrayList(DatabaseConnection.getItems());
-        itemTableView.setItems(items);
+        // Create a Set to track already added items by their hash codes
+        Set<Integer> addedItemsHashCodes = new HashSet<>();
+
+        List<Item> items = DatabaseConnection.getItems();
+
+        // Phase 1: Add containers and their contained items
+        for (Item item : items) {
+            int itemHashCode = item.hashCode(); // Get the hash code of the item
+
+            // Check if the item's hash code is already in the set
+            if (item instanceof Container && !addedItemsHashCodes.contains(itemHashCode)) {
+                // Create and format the container item label directly
+                String itemLabel = item.getName() + " (" + item.getType() + ")";
+                TreeItem<String> itemNode = new TreeItem<>(itemLabel);
+                addedItemsHashCodes.add(itemHashCode); // Mark this container as added
+
+                // Add this container node to the root
+                rootItem.getChildren().add(itemNode);
+
+                // Process contained items
+                Container container = (Container) item;
+                List<Item> containedItems = container.getContainedItems();
+                for (Item containedItem : containedItems) {
+                    int containedItemHashCode = containedItem.hashCode();
+
+                    // Skip adding the contained item if it's already added based on hash code
+                    if (!addedItemsHashCodes.contains(containedItemHashCode)) {
+                        // Create and format the contained item label directly
+                        String containedItemLabel = containedItem.getName() + " (" + containedItem.getType() + ")";
+                        TreeItem<String> containedItemNode = new TreeItem<>(containedItemLabel);
+                        itemNode.getChildren().add(containedItemNode);
+                        addedItemsHashCodes.add(containedItemHashCode); // Mark the contained item as added
+                    }
+                }
+            }
+        }
+
+        // Phase 2: Add non-container items that weren't added in Phase 1
+        for (Item item : items) {
+            int itemHashCode = item.hashCode(); // Get the hash code of the item
+
+            // Check if the item has not been added by its hash code in Phase 1
+            if (!(item instanceof Container) && !addedItemsHashCodes.contains(itemHashCode)) {
+                // Create and format the non-container item label directly
+                String itemLabel = item.getName() + " (" + item.getType() + ")";
+                TreeItem<String> itemNode = new TreeItem<>(itemLabel);
+                rootItem.getChildren().add(itemNode); // Add non-container item to root
+                addedItemsHashCodes.add(itemHashCode); // Mark this non-container item as added
+            }
+        }
+
+        // Set the root item to the TreeView (this refreshes the TreeView)
+        itemTreeView.setRoot(rootItem);
+        itemTreeView.setCellFactory(param -> new TextFieldTreeCell<>());
     }
 
     @FXML public void addItemToPane() {
@@ -85,7 +129,7 @@ public class ApplicationController {
                 Item item = controller.getItem();
                 DatabaseConnection.insertItem(item);
                 addItemToPaneFromDatabase(item);
-                loadItemsIntoTable();
+                loadItemsIntoTree();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -221,5 +265,4 @@ public class ApplicationController {
             }
         }
     }
-
 }

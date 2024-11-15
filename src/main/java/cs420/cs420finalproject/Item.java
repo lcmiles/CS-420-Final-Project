@@ -1,5 +1,7 @@
 package cs420.cs420finalproject;
 
+import java.util.Objects;
+
 public abstract class Item {
 
     private String name;
@@ -33,8 +35,20 @@ public abstract class Item {
     public abstract void saveToDatabase();
 
     @Override
-    public String toString() {
-        return String.format("Item{name='%s', type='%s', x=%.2f, y=%.2f}", name, type, x, y);
+    public boolean equals(Object o) {
+        if (this == o) return true; // Check if the objects are the same reference
+        if (o == null || getClass() != o.getClass()) return false; // Check if the object is of the same type
+
+        Item item = (Item) o;
+
+        return Double.compare(item.x, x) == 0 && // Compare x coordinates
+                Double.compare(item.y, y) == 0 && // Compare y coordinates
+                name.equals(item.name) && // Compare names
+                type.equals(item.type); // Compare types
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, type, x, y); // Generate hash code based on important fields
+    }
 }
