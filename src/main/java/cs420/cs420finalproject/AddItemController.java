@@ -2,31 +2,33 @@ package cs420.cs420finalproject;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import javafx.scene.control.SelectionMode;
 
 public class AddItemController {
 
     @FXML private TextField itemNameField;
     @FXML private TextField xField;
     @FXML private TextField yField;
-    @FXML private TextField itemTypeField; // Replaced ComboBox with a TextField for item type input
+    @FXML private TextField itemTypeField;
     @FXML private CheckBox containerCheckBox;
-    @FXML private ComboBox<Item> itemComboBox;
+    @FXML private ListView<Item> itemListView; // Use ListView instead of ComboBox
     private Item newItem;
     private boolean itemCreated = false;
 
     @FXML
     public void initialize() {
-        // Populate the ComboBox with items from the database
-        loadItemsIntoComboBox();
+        // Populate the ListView with items from the database
+        loadItemsIntoListView();
     }
 
-    private void loadItemsIntoComboBox() {
+    private void loadItemsIntoListView() {
         // Retrieve items from the database
-        itemComboBox.getItems().clear();  // Clear any existing items in the ComboBox
-        itemComboBox.getItems().addAll(DatabaseConnection.getItems());  // Add all items from the database to the ComboBox
+        itemListView.getItems().clear();  // Clear any existing items in the ListView
+        itemListView.getItems().addAll(DatabaseConnection.getItems());  // Add all items from the database to the ListView
+        itemListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
     @FXML
@@ -41,13 +43,36 @@ public class AddItemController {
             System.out.println("Invalid coordinates entered.");
             return;
         }
-        newItem = new Item(itemName, itemType, x, y) {
-            @Override
-            public void saveToDatabase() {
-                // Implement database save logic here (e.g., save newItem to your database)
-                DatabaseConnection.insertItem(this);
+
+        // Create a new item (regular Item or Container)
+        if ("container".equals(itemType)) {
+            newItem = new Container(itemName, itemType, x, y);  // Create a Container object if the type is "container"
+        } else {
+            newItem = new Item(itemName, itemType, x, y) {
+                @Override
+                public void saveToDatabase() {
+                    // Insert new item into database
+                    DatabaseConnection.insertItem(this);
+                }
+            };
+        }
+
+        // Insert the new item into the database (will be checked for duplicates)
+        DatabaseConnection.insertItem(newItem);
+
+        // If the item is a container, insert the contained items into the database
+        if (containerCheckBox.isSelected()) {
+            if (newItem instanceof Container) {
+                Container container = (Container) newItem;
+                for (Item selectedItem : itemListView.getSelectionModel().getSelectedItems()) {
+                    // Insert into contained_items table
+                    DatabaseConnection.insertContainedItem(container, selectedItem);
+                }
+            } else {
+                System.out.println("The created item is not a container.");
             }
-        };
+        }
+
         itemCreated = true;
         System.out.println("Item created: " + newItem);
         closePopup();
@@ -55,12 +80,12 @@ public class AddItemController {
 
     @FXML
     private void onContainerCheckBoxChanged() {
-        // Enable or disable the ComboBox based on the CheckBox state
+        // Enable or disable the ListView based on the CheckBox state
         if (containerCheckBox.isSelected()) {
-            itemComboBox.setDisable(false); // Enable ComboBox
-            loadItemsIntoComboBox(); // Refresh the ComboBox with current items from the DB
+            itemListView.setDisable(false); // Enable ListView
+            loadItemsIntoListView(); // Refresh the ListView with current items from the DB
         } else {
-            itemComboBox.setDisable(true); // Disable ComboBox
+            itemListView.setDisable(true); // Disable ListView
         }
     }
 

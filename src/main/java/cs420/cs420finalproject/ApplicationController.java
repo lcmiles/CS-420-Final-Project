@@ -97,29 +97,21 @@ public class ApplicationController {
     }
 
     private void addItemToPaneFromDatabase(Item item) {
-        if (item instanceof Container) {
-            Container container = (Container) item;
-
-            // Create visual representation of the container
-            Rectangle containerRect = createVisualItem(container.getType());
-            containerRect.setLayoutX(container.getX());
-            containerRect.setLayoutY(container.getY());
-            dronePane.getChildren().add(containerRect);  // Assuming dronePane is the UI component
-
-            // Add contained items inside the container
-            for (Item containedItem : container.getContainedItems()) {
-                addItemToPaneFromDatabase(containedItem);  // Recursively add contained items
-            }
+        if ("drone".equals(item.getType())) {
+            addDroneToPane(item.getX(),item.getY());
+        } else if ("drone base".equals(item.getType())) {
+            addDroneBase();
         } else {
-            // Handle regular items (non-container)
-            Rectangle itemRect = createVisualItem(item.getType());
-            itemRect.setLayoutX(item.getX());
-            itemRect.setLayoutY(item.getY());
-            dronePane.getChildren().add(itemRect);
+            // Otherwise, handle other items as usual
+            Rectangle itemRectangle = createVisualItem(item.getType());
+            itemRectangle.setLayoutX(item.getX());
+            itemRectangle.setLayoutY(item.getY());
+            dronePane.getChildren().add(itemRectangle);
+            if ("field".equals(item.getType())) {
+                fieldItems.add(itemRectangle); // Add field items to the list
+            }
         }
     }
-
-
 
     // Method to add the animated drone to the pane
     private void addDroneToPane(double x, double y) {

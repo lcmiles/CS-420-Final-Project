@@ -8,28 +8,21 @@ public class Container extends Item {
 
     public Container(String name, String type, double x, double y) {
         super(name, type, x, y);
-        this.containedItems = new ArrayList<>();
-    }
-
-    public List<Item> getContainedItems() {
-        return containedItems;
+        containedItems = new ArrayList<>();
     }
 
     public void addItem(Item item) {
         containedItems.add(item);
     }
 
-    @Override
-    public void saveToDatabase() {
-        DatabaseConnection.insertItem(this);
-        for (Item item : containedItems) {
-            DatabaseConnection.insertContainedItem(this, item);
-        }
+    public List<Item> getContainedItems() {
+        return containedItems;
     }
 
     @Override
-    public String toString() {
-        return String.format("Container{name='%s', type='%s', x=%.2f, y=%.2f, containedItems=%s}",
-                getName(), getType(), getX(), getY(), containedItems);
+    public void saveToDatabase() {
+        // Insert container into the database
+        DatabaseConnection.insertItem(this);
     }
 }
+
