@@ -4,7 +4,8 @@ public abstract class Item {
 
     private String name;
     private String type;
-    private double x, y;
+    private double x;
+    private double y;
 
     public Item(String name, String type, double x, double y) {
         this.name = name;
@@ -17,33 +18,23 @@ public abstract class Item {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getType() {
         return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
     public double getX() {
         return x;
     }
 
-    public void setX(double x) {
-        this.x = x;
-    }
-
     public double getY() {
         return y;
     }
 
-    public void setY(double y) {
-        this.y = y;
+    public abstract void saveToDatabase();
+
+    @Override
+    public String toString() {
+        return String.format("Item{name='%s', type='%s', x=%.2f, y=%.2f}", name, type, x, y);
     }
 
-    public abstract void saveToDatabase();
 }

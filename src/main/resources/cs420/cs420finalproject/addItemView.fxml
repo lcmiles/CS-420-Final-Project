@@ -3,10 +3,16 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ComboBox?>
 <VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.AddItemController">
     <TextField fx:id="itemNameField" promptText="Enter item name" />
     <TextField fx:id="itemTypeField" promptText="Enter item type" />
     <TextField fx:id="xField" promptText="Enter X coordinate" />
     <TextField fx:id="yField" promptText="Enter Y coordinate" />
+    <CheckBox fx:id="containerCheckBox" text="Is Container" onAction="#onContainerCheckBoxChanged"/>
+    <ListView fx:id="itemListView" disable="true" />
+    <ComboBox fx:id="itemComboBox" disable="true" />
     <Button text="Save Item" onAction="#onCreateItem" />
 </VBox>

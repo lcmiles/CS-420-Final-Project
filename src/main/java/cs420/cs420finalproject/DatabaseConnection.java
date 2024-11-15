@@ -2,7 +2,9 @@ package cs420.cs420finalproject;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DatabaseConnection {
 
@@ -67,9 +69,22 @@ public class DatabaseConnection {
         }
     }
 
-    // Get items from the database
+    public static void insertContainedItem(Container container, Item item) {
+        String sql = "INSERT INTO contained_items (container_name, item_name) VALUES(?, ?)";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, container.getName());
+            pstmt.setString(2, item.getName());
+            pstmt.executeUpdate();
+            System.out.println("Contained item inserted: " + item.getName() + " in container: " + container.getName());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+
     public static List<Item> getItems() {
         List<Item> items = new ArrayList<>();
+        Map<String, Container> containerMap = new HashMap<>();
         try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
             String sql = "SELECT * FROM items ORDER BY id";
             ResultSet rs = stmt.executeQuery(sql);
@@ -78,20 +93,39 @@ public class DatabaseConnection {
                 String type = rs.getString("type");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
-                // Creating a simple item object, no container logic needed anymore
-                Item item = new Item(name, type, x, y) {
-                    @Override
-                    public void saveToDatabase() {
-                        insertItem(this); // Save to database
-                    }
-                };
-                items.add(item);
+                if ("container".equals(type)) {
+                    Container container = new Container(name, type, x, y);
+                    containerMap.put(name, container);
+                    items.add(container);
+                } else {
+                    Item item = new Item(name, type, x, y) {
+                        @Override
+                        public void saveToDatabase() {
+                            insertItem(this);
+                        }
+                    };
+                    items.add(item);
+                }
+            }
+
+            // Load contained items for each container
+            sql = "SELECT container_name, item_name FROM contained_items";
+            rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String containerName = rs.getString("container_name");
+                String itemName = rs.getString("item_name");
+                Container container = containerMap.get(containerName);
+                if (container != null) {
+                    Item item = getItemByName(itemName);
+                    if (item != null) container.addItem(item);
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving items: " + e.getMessage());
         }
         return items;
     }
+
 
     // Get item by name from the database
     public static Item getItemByName(String name) {
@@ -136,6 +170,16 @@ public class DatabaseConnection {
                         " field_id text NOT NULL\n" + // Add field_id column
                         ");";
                 conn.createStatement().execute(cropGrowthSql);
+                // Create the contained items table
+                String containedItemsSql = "CREATE TABLE IF NOT EXISTS contained_items (\n" +
+                        " id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
+                        " container_name TEXT NOT NULL,\n" +
+                        " item_name TEXT NOT NULL,\n" +
+                        " FOREIGN KEY(container_name) REFERENCES items(name),\n" +
+                        " FOREIGN KEY(item_name) REFERENCES items(name)\n" +
+                        ");";
+                conn.createStatement().execute(containedItemsSql);
+                System.out.println("Database initialized with contained_items table.");
                 System.out.println("Database initialized.");
             }
         } catch (SQLException e) {
