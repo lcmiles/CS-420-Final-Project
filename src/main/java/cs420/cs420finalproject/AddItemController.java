@@ -57,19 +57,12 @@ public class AddItemController {
             };
         }
 
-        // Insert the new item into the database (will be checked for duplicates)
-        DatabaseConnection.insertItem(newItem);
-
         // If the item is a container, insert the contained items into the database
-        if (containerCheckBox.isSelected()) {
-            if (newItem instanceof Container) {
-                Container container = (Container) newItem;
-                for (Item selectedItem : itemListView.getSelectionModel().getSelectedItems()) {
-                    // Insert into contained_items table
-                    DatabaseConnection.insertContainedItem(container, selectedItem);
-                }
-            } else {
-                System.out.println("The created item is not a container.");
+        if (containerCheckBox.isSelected() && newItem instanceof Container) {
+            Container container = (Container) newItem;
+            for (Item selectedItem : itemListView.getSelectionModel().getSelectedItems()) {
+                // Insert into contained_items table
+                DatabaseConnection.insertContainedItem(container, selectedItem);
             }
         }
 
@@ -77,6 +70,8 @@ public class AddItemController {
         System.out.println("Item created: " + newItem);
         closePopup();
     }
+
+
 
     @FXML
     private void onContainerCheckBoxChanged() {

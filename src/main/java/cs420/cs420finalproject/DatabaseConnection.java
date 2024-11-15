@@ -56,9 +56,7 @@ public class DatabaseConnection {
 
     // Insert item into the database (no recursion needed now)
     public static void insertItem(Item item) {
-        // Check if the item already exists
-        if (getItemByName(item.getName()) == null) {
-            String sql = "INSERT INTO items (name, type, x, y) VALUES(?, ?, ?, ?)";
+        String sql = "INSERT INTO items (name, type, x, y) VALUES(?, ?, ?, ?)";
             try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, item.getName());
                 pstmt.setString(2, item.getType());
@@ -69,10 +67,8 @@ public class DatabaseConnection {
             } catch (SQLException e) {
                 System.out.println(e.getMessage());
             }
-        } else {
-            System.out.println("Item already exists: " + item.getName());
-        }
     }
+
 
     public static void insertContainedItem(Container container, Item item) {
         String sql = "INSERT INTO contained_items (container_name, item_name) VALUES(?, ?)";
@@ -85,6 +81,7 @@ public class DatabaseConnection {
             System.out.println(e.getMessage());
         }
     }
+
 
     public static List<Item> getItems() {
         List<Item> items = new ArrayList<>();
@@ -129,6 +126,7 @@ public class DatabaseConnection {
         }
         return items;
     }
+
 
     // Get item by name from the database
     public static Item getItemByName(String name) {
@@ -189,4 +187,5 @@ public class DatabaseConnection {
             System.out.println(e.getMessage());
         }
     }
+
 }
