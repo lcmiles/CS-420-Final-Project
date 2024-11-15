@@ -7,7 +7,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Label;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
@@ -29,9 +32,11 @@ public class ApplicationController {
     private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
     private Map<String, CropGrowthData> cropDataMap = new HashMap<>(); // Mapping of crop data
     @FXML private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
-    @FXML private TreeView<Item> itemTreeView; // TreeView for displaying items
-    private Map<Item, TreeItem<Item>> itemMap = new HashMap<>();
-
+    @FXML private TableView<Item> itemTableView; // TableView to display all items
+    @FXML private TableColumn<Item, String> nameColumn;
+    @FXML private TableColumn<Item, String> typeColumn;
+    @FXML private TableColumn<Item, Double> xColumn;
+    @FXML private TableColumn<Item, Double> yColumn;
 
     public void initialize() {
         statusLabel.setText("System ready.");
@@ -43,67 +48,23 @@ public class ApplicationController {
         for (Item item : savedItems) {
             addItemToPaneFromDatabase(item);
         }
-        loadItemsIntoTreeView();
+        setupTableColumns();
+        loadItemsIntoTable();
         // Redirect System.out to the TextArea
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
-    private void loadItemsIntoTreeView() {
-        // Clear any existing tree before adding new items
-        itemTreeView.setRoot(null);  // Clear the TreeView's current root
-        itemTreeView.setShowRoot(false);  // Optionally hide the root node if it's unnecessary
-
-        // Create the root TreeItem
-        TreeItem<Item> root = new TreeItem<>(new Item("Root", "root", 0, 0) {
-            @Override
-            public void saveToDatabase() {
-                // No saving for the root node
-            }
-        });
-        root.setExpanded(true);
-
-        // Set to track items that have been added to the tree to avoid duplication
-        Set<Item> addedItems = new HashSet<>();
-
-        // Load items from the database
-        List<Item> items = DatabaseConnection.getItems();
-        System.out.println("Total items loaded from database: " + items.size());
-
-        // Add only containers to the tree
-        for (Item item : items) {
-            // Only add the item if it's a container
-            if (item instanceof Container) {
-                addItemToTree(root, item, addedItems);
-            }
-        }
-
-        // Set the root node for the TreeView
-        itemTreeView.setRoot(root);
-        itemTreeView.layout();  // Force layout update to reflect changes
+    private void setupTableColumns() {
+        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
+        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
+        xColumn.setCellValueFactory(new PropertyValueFactory<>("x"));
+        yColumn.setCellValueFactory(new PropertyValueFactory<>("y"));
     }
 
-    private void addItemToTree(TreeItem<Item> parentNode, Item item, Set<Item> addedItems) {
-        // If the item has already been added, return to avoid duplication
-        if (addedItems.contains(item)) {
-            return;
-        }
-
-        // Create a TreeItem for the current item (container)
-        TreeItem<Item> treeItem = new TreeItem<>(item);
-        parentNode.getChildren().add(treeItem); // Add item as a child of the parent
-
-        // Mark this item as added
-        addedItems.add(item);
-
-        // If the item is a container, add its contained items
-        if (item instanceof Container container) {
-            for (Item containedItem : container.getContainedItems()) {
-                // Only add the contained items under this container
-                addItemToTree(treeItem, containedItem, addedItems);
-            }
-        }
+    private void loadItemsIntoTable() {
+        ObservableList<Item> items = FXCollections.observableArrayList(DatabaseConnection.getItems());
+        itemTableView.setItems(items);
     }
-
 
     @FXML public void addItemToPane() {
         openItemDetailsPopup();
@@ -124,7 +85,7 @@ public class ApplicationController {
                 Item item = controller.getItem();
                 DatabaseConnection.insertItem(item);
                 addItemToPaneFromDatabase(item);
-                loadItemsIntoTreeView();
+                loadItemsIntoTable();
             }
         } catch (Exception e) {
             e.printStackTrace();

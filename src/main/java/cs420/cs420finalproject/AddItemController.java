@@ -33,7 +33,6 @@ public class AddItemController {
 
     @FXML
     public void onCreateItem() {
-        String itemType = itemTypeField.getText();
         String itemName = itemNameField.getText();
         double x = 0, y = 0;
         try {
@@ -44,11 +43,14 @@ public class AddItemController {
             return;
         }
 
-        // Create a new item (regular Item or Container)
-        if ("container".equals(itemType)) {
-            newItem = new Container(itemName, itemType, x, y);  // Create a Container object if the type is "container"
+        // Determine whether the item is a container based on the checkbox
+        boolean isContainer = containerCheckBox.isSelected();
+
+        // Create a new item (either regular Item or Container based on the checkbox)
+        if (isContainer) {
+            newItem = new Container(itemName, "container", x, y);  // Use "container" type for a Container
         } else {
-            newItem = new Item(itemName, itemType, x, y) {
+            newItem = new Item(itemName, "regular", x, y) {  // Use "regular" type for a non-container item
                 @Override
                 public void saveToDatabase() {
                     // Insert new item into database
@@ -58,7 +60,7 @@ public class AddItemController {
         }
 
         // If the item is a container, insert the contained items into the database
-        if (containerCheckBox.isSelected() && newItem instanceof Container) {
+        if (isContainer) {
             Container container = (Container) newItem;
             for (Item selectedItem : itemListView.getSelectionModel().getSelectedItems()) {
                 // Insert into contained_items table
@@ -70,6 +72,7 @@ public class AddItemController {
         System.out.println("Item created: " + newItem);
         closePopup();
     }
+
 
     @FXML
     private void onContainerCheckBoxChanged() {

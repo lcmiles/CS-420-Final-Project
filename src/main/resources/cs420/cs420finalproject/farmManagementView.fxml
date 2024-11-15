@@ -7,14 +7,14 @@
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
-<?import javafx.scene.control.TreeView?>
-<?import javafx.scene.control.TreeItem?>
 
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="648.0" prefWidth="1062.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.ApplicationController">
     <children>
@@ -48,7 +48,14 @@
                     <children>
                         <SplitPane dividerPositions="0.5" layoutX="1.0" layoutY="305.0" orientation="VERTICAL" prefHeight="276.0" prefWidth="527.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="305.0">
                             <items>
-                                <TreeView fx:id="itemTreeView" prefHeight="525.0" prefWidth="525.0" />
+                                <TableView fx:id="itemTableView" prefHeight="0.0" prefWidth="525.0">
+                                    <columns>
+                                        <TableColumn fx:id="nameColumn" prefWidth="176.0" text="Name" />
+                                        <TableColumn fx:id="typeColumn" prefWidth="154.0" text="Type" />
+                                        <TableColumn prefWidth="103.0" text="X Coordinate" fx:id="xColumn" />
+                                        <TableColumn fx:id="yColumn" prefWidth="93.0" text="Y Coordinate" />
+                                    </columns>
+                                </TableView>
                                 <TextArea fx:id="logs" editable="false" prefHeight="102.0" prefWidth="527.0" />
                             </items>
                         </SplitPane>
@@ -65,12 +72,11 @@
                 </AnchorPane>
                 <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="581.0" prefWidth="563.0">
                     <children>
-                        <Pane fx:id="dronePane" prefHeight="800" prefWidth="600" style="-fx-border-color: black;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                        <Pane fx:id="dronePane" prefHeight="581.0" prefWidth="563.0" style="-fx-border-color: black;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                             <children>
                                 <Label fx:id="statusLabel" layoutX="45.0" layoutY="2.0" prefHeight="17.0" prefWidth="200" text="System ready." />
                                 <Text layoutX="3.0" layoutY="15.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
-                            </children>
-                        </Pane>
+                            </children></Pane>
                     </children>
                 </AnchorPane>
             </items>
