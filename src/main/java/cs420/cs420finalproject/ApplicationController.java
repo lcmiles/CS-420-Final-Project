@@ -225,7 +225,7 @@ public class ApplicationController {
         return newData;
     }
 
-    @FXML public void onViewChartButtonClicked() {
+    @FXML public void onViewGrowthChartButtonClicked() {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("growthChartView.fxml"));
             Parent root = fxmlLoader.load();
