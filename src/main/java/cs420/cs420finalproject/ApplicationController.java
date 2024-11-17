@@ -1,8 +1,6 @@
 package cs420.cs420finalproject;
 
 import javafx.animation.SequentialTransition;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -20,7 +18,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import javafx.scene.chart.LineChart;
 import java.io.PrintStream;
-import java.util.stream.Collectors;
 
 public class ApplicationController {
 
@@ -50,62 +47,54 @@ public class ApplicationController {
     }
 
     private void loadItemsIntoTree() {
-        // Create the root item for the TreeView
         TreeItem<String> rootItem = new TreeItem<>("Items");
         rootItem.setExpanded(true);
 
-        // Create a Set to track already added items by their hash codes
         Set<Integer> addedItemsHashCodes = new HashSet<>();
+        List<Item> items = DatabaseConnection.getItems();  // Retrieve all items, including containers and contained items
 
-        List<Item> items = DatabaseConnection.getItems();
-
-        // Phase 1: Add containers and their contained items
+        // Phase 1: Process containers and their contained items
         for (Item item : items) {
-            int itemHashCode = item.hashCode(); // Get the hash code of the item
+            int itemHashCode = item.hashCode();  // Use the hashCode() to check for duplicates
 
-            // Check if the item's hash code is already in the set
-            if (item instanceof Container && !addedItemsHashCodes.contains(itemHashCode)) {
-                // Create and format the container item label directly
-                String itemLabel = item.getName() + " (" + item.getType() + ")";
-                TreeItem<String> itemNode = new TreeItem<>(itemLabel);
-                addedItemsHashCodes.add(itemHashCode); // Mark this container as added
+            if (!addedItemsHashCodes.contains(itemHashCode)) {  // Only add items that haven't been added
+                if (item instanceof Container) {
+                    Container container = (Container) item;
+                    // Remove "(Container)" from label
+                    String itemLabel = item.getName();
+                    TreeItem<String> itemNode = new TreeItem<>(itemLabel);
+                    rootItem.getChildren().add(itemNode);
+                    addedItemsHashCodes.add(itemHashCode);
 
-                // Add this container node to the root
-                rootItem.getChildren().add(itemNode);
-
-                // Process contained items
-                Container container = (Container) item;
-                List<Item> containedItems = container.getContainedItems();
-                for (Item containedItem : containedItems) {
-                    int containedItemHashCode = containedItem.hashCode();
-
-                    // Skip adding the contained item if it's already added based on hash code
-                    if (!addedItemsHashCodes.contains(containedItemHashCode)) {
-                        // Create and format the contained item label directly
-                        String containedItemLabel = containedItem.getName() + " (" + containedItem.getType() + ")";
-                        TreeItem<String> containedItemNode = new TreeItem<>(containedItemLabel);
-                        itemNode.getChildren().add(containedItemNode);
-                        addedItemsHashCodes.add(containedItemHashCode); // Mark the contained item as added
+                    // Add contained items to the container node
+                    List<Item> containedItems = container.getContainedItems();
+                    for (Item containedItem : containedItems) {
+                        int containedItemHashCode = containedItem.hashCode();  // Ensure no duplicate contained items
+                        if (!addedItemsHashCodes.contains(containedItemHashCode)) {
+                            String containedItemLabel = containedItem.getName();  // Remove the label type here
+                            TreeItem<String> containedItemNode = new TreeItem<>(containedItemLabel);
+                            itemNode.getChildren().add(containedItemNode);
+                            addedItemsHashCodes.add(containedItemHashCode);
+                        }
                     }
                 }
             }
         }
 
-        // Phase 2: Add non-container items that weren't added in Phase 1
+        // Phase 2: Process non-container items and add them to the root
         for (Item item : items) {
-            int itemHashCode = item.hashCode(); // Get the hash code of the item
+            int itemHashCode = item.hashCode();
 
-            // Check if the item has not been added by its hash code in Phase 1
             if (!(item instanceof Container) && !addedItemsHashCodes.contains(itemHashCode)) {
-                // Create and format the non-container item label directly
-                String itemLabel = item.getName() + " (" + item.getType() + ")";
+                // Non-container items (regular items) are added directly to the root
+                String itemLabel = item.getName();  // Remove the label type here
                 TreeItem<String> itemNode = new TreeItem<>(itemLabel);
-                rootItem.getChildren().add(itemNode); // Add non-container item to root
-                addedItemsHashCodes.add(itemHashCode); // Mark this non-container item as added
+                rootItem.getChildren().add(itemNode);
+                addedItemsHashCodes.add(itemHashCode);
             }
         }
 
-        // Set the root item to the TreeView (this refreshes the TreeView)
+        // Set the root for the TreeView and define how cells should be displayed
         itemTreeView.setRoot(rootItem);
         itemTreeView.setCellFactory(param -> new TextFieldTreeCell<>());
     }

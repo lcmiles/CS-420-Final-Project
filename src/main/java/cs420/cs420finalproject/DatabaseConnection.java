@@ -86,47 +86,66 @@ public class DatabaseConnection {
     public static List<Item> getItems() {
         List<Item> items = new ArrayList<>();
         Map<String, Container> containerMap = new HashMap<>();
+
         try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
             String sql = "SELECT * FROM items ORDER BY id";
             ResultSet rs = stmt.executeQuery(sql);
+
+            // First pass: Add items to their respective lists and check if they are containers
             while (rs.next()) {
                 String name = rs.getString("name");
                 String type = rs.getString("type");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
-                if ("container".equals(type)) {
+
+                // Create an item as usual
+                Item item = new Item(name, type, x, y);
+
+                // Now check if the item is a container by looking for it in the contained_items table
+                if (isContainer(name)) {
                     Container container = new Container(name, type, x, y);
-                    containerMap.put(name, container);
-                    items.add(container);
+                    containerMap.put(name, container);  // Add the container to the map
+                    items.add(container);  // Add the container to the items list
                 } else {
-                    Item item = new Item(name, type, x, y) {
-                        @Override
-                        public void saveToDatabase() {
-                            insertItem(this);
-                        }
-                    };
-                    items.add(item);
+                    items.add(item);  // Regular item, add to the list
                 }
             }
 
-            // Load contained items for each container
+            // Second pass: Add contained items to their respective containers
             sql = "SELECT container_name, item_name FROM contained_items";
             rs = stmt.executeQuery(sql);
             while (rs.next()) {
                 String containerName = rs.getString("container_name");
                 String itemName = rs.getString("item_name");
+
                 Container container = containerMap.get(containerName);
                 if (container != null) {
-                    Item item = getItemByName(itemName);
-                    if (item != null) container.addItem(item);
+                    Item item = getItemByName(itemName); // Retrieve the item by name
+                    if (item != null) {
+                        container.addItem(item); // Add the item to the container's containedItems list
+                    }
                 }
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving items: " + e.getMessage());
         }
+
         return items;
     }
 
+    private static boolean isContainer(String itemName) {
+        String sql = "SELECT COUNT(*) FROM contained_items WHERE container_name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, itemName);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;  // If count > 0, it's a container
+            }
+        } catch (SQLException e) {
+            System.out.println("Error checking if item is a container: " + e.getMessage());
+        }
+        return false;
+    }
 
     // Get item by name from the database
     public static Item getItemByName(String name) {
@@ -149,6 +168,30 @@ public class DatabaseConnection {
         }
         return null;
     }
+
+    // Get a list of all contained items (i.e., items that are part of containers)
+    public static List<Item> getContainedItems() {
+        List<Item> containedItems = new ArrayList<>();
+
+        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+            String sql = "SELECT item_name FROM contained_items";
+            ResultSet rs = stmt.executeQuery(sql);
+
+            // Retrieve each contained item and add it to the list
+            while (rs.next()) {
+                String itemName = rs.getString("item_name");
+                Item item = getItemByName(itemName);  // Retrieve item by its name
+                if (item != null) {
+                    containedItems.add(item);  // Add item to the list
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving contained items: " + e.getMessage());
+        }
+
+        return containedItems;
+    }
+
 
     // Initialize the database (tables creation)
     public static void initializeDatabase() {

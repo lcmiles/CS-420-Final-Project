@@ -2,7 +2,7 @@ package cs420.cs420finalproject;
 
 import java.util.Objects;
 
-public abstract class Item {
+public class Item {
 
     private String name;
     private String type;
@@ -32,8 +32,6 @@ public abstract class Item {
         return y;
     }
 
-    public abstract void saveToDatabase();
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true; // Check if the objects are the same reference
@@ -51,4 +49,9 @@ public abstract class Item {
     public int hashCode() {
         return Objects.hash(name, type, x, y); // Generate hash code based on important fields
     }
+
+    public void saveToDatabase() {
+        DatabaseConnection.insertItem(this);
+    }
+
 }

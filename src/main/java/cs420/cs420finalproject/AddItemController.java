@@ -7,6 +7,9 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import javafx.scene.control.SelectionMode;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class AddItemController {
 
     @FXML private TextField itemNameField;
@@ -25,11 +28,33 @@ public class AddItemController {
     }
 
     private void loadItemsIntoListView() {
-        // Retrieve items from the database
         itemListView.getItems().clear();  // Clear any existing items in the ListView
-        itemListView.getItems().addAll(DatabaseConnection.getItems());  // Add all items from the database to the ListView
-        itemListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+        // Retrieve all items from the database
+        List<Item> allItems = DatabaseConnection.getItems();
+
+        // Retrieve all containers and the items contained in them
+        List<Item> containedItems = DatabaseConnection.getContainedItems();
+
+        // Filter out items that are already added to a container
+        List<Item> availableItems = new ArrayList<>();
+        for (Item item : allItems) {
+            boolean alreadyContained = false;
+            for (Item containedItem : containedItems) {
+                if (item.hashCode() == containedItem.hashCode()) {
+                    alreadyContained = true;
+                    break;  // This item is already contained in a container, skip it
+                }
+            }
+            if (!alreadyContained) {
+                availableItems.add(item);  // Add item to the list if it's not already contained
+            }
+        }
+
+        itemListView.getItems().addAll(availableItems);  // Add available items to the ListView
+        itemListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);  // Allow multi-selection
     }
+
 
     @FXML
     public void onCreateItem() {
@@ -43,27 +68,25 @@ public class AddItemController {
             return;
         }
 
-        // Determine whether the item is a container based on the checkbox
         boolean isContainer = containerCheckBox.isSelected();
+        System.out.println("Creating item. Is container: " + isContainer);
 
-        // Create a new item (either regular Item or Container based on the checkbox)
+        // Create item or container based on checkbox
         if (isContainer) {
-            newItem = new Container(itemName, "container", x, y);  // Use "container" type for a Container
+            String itemType = itemTypeField.getText();
+            newItem = new Container(itemName, itemType, x, y);
+            System.out.println("Container created: " + newItem);
         } else {
-            newItem = new Item(itemName, "regular", x, y) {  // Use "regular" type for a non-container item
-                @Override
-                public void saveToDatabase() {
-                    // Insert new item into database
-                    DatabaseConnection.insertItem(this);
-                }
-            };
+            String itemType = itemTypeField.getText();
+            newItem = new Item(itemName, itemType, x, y);
+            System.out.println("Regular item created: " + newItem);
         }
 
-        // If the item is a container, insert the contained items into the database
+        // Add contained items to container if it's a container
         if (isContainer) {
             Container container = (Container) newItem;
             for (Item selectedItem : itemListView.getSelectionModel().getSelectedItems()) {
-                // Insert into contained_items table
+                System.out.println("Adding contained item: " + selectedItem);
                 DatabaseConnection.insertContainedItem(container, selectedItem);
             }
         }
@@ -72,7 +95,6 @@ public class AddItemController {
         System.out.println("Item created: " + newItem);
         closePopup();
     }
-
 
     @FXML
     private void onContainerCheckBoxChanged() {
