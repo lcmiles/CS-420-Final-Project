@@ -50,6 +50,11 @@ public class Item {
         return Objects.hash(name, type, x, y); // Generate hash code based on important fields
     }
 
+    @Override
+    public String toString() {
+        return getName() + " (" + getType() + ")";
+    }
+
     public void saveToDatabase() {
         DatabaseConnection.insertItem(this);
     }
