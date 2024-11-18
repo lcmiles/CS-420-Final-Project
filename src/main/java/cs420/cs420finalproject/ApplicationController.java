@@ -82,6 +82,10 @@ public class ApplicationController {
             }
         }
         root.setExpanded(true);
+
+        // Recursively expand all children
+        expandAllNodes(root);
+
         itemTreeView.setRoot(root);
 
         // Now load items into the visual pane (dronePane)
@@ -90,6 +94,14 @@ public class ApplicationController {
         // Return the root of the tree
         return root;
     }
+
+    private void expandAllNodes(TreeItem<String> node) {
+        node.setExpanded(true);
+        for (TreeItem<String> child : node.getChildren()) {
+            expandAllNodes(child);  // Recursively expand child nodes
+        }
+    }
+
 
 
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
