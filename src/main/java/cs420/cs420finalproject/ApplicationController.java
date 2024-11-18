@@ -1,25 +1,21 @@
 package cs420.cs420finalproject;
 
 import javafx.animation.SequentialTransition;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.control.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import javafx.scene.chart.LineChart;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 import java.io.PrintStream;
 
 public class ApplicationController {
@@ -32,11 +28,10 @@ public class ApplicationController {
     private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
     private Map<String, CropGrowthData> cropDataMap = new HashMap<>(); // Mapping of crop data
     @FXML private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
-    @FXML private TableView<Item> itemTableView; // TableView to display all items
-    @FXML private TableColumn<Item, String> nameColumn;
-    @FXML private TableColumn<Item, String> typeColumn;
-    @FXML private TableColumn<Item, Double> xColumn;
-    @FXML private TableColumn<Item, Double> yColumn;
+    @FXML private TreeView<String> itemTreeView; // TreeView to display all items
+    Set<String> addedItems = new HashSet<>(); // Set to track added items
+    private Circle existingDrone;
+    private Rectangle existingDroneBase;
 
     public void initialize() {
         statusLabel.setText("System ready.");
@@ -44,27 +39,193 @@ public class ApplicationController {
         for (CropGrowthData data : savedCropData) {
             cropDataMap.put(data.getFieldId(), data);
         }
-        List<Item> savedItems = DatabaseConnection.getItems();
-        for (Item item : savedItems) {
-            addItemToPaneFromDatabase(item);
-        }
-        setupTableColumns();
-        loadItemsIntoTable();
-        // Redirect System.out to the TextArea
+        loadItemsIntoTree();
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
-    private void setupTableColumns() {
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-        typeColumn.setCellValueFactory(new PropertyValueFactory<>("type"));
-        xColumn.setCellValueFactory(new PropertyValueFactory<>("x"));
-        yColumn.setCellValueFactory(new PropertyValueFactory<>("y"));
+    private TreeItem<String> loadItemsIntoTree() {
+        List<Item> savedItems = DatabaseConnection.getItems();
+        Map<String, TreeItem<String>> itemTreeMap = new HashMap<>();
+        Map<String, Container> containerMap = new HashMap<>();
+
+        // Create TreeItem nodes for each item and separate containers
+        for (Item item : savedItems) {
+            TreeItem<String> itemNode = new TreeItem<>(item.getName());
+            itemTreeMap.put(item.getName(), itemNode);
+
+            if (item instanceof Container) {
+                containerMap.put(item.getName(), (Container) item);
+            }
+        }
+
+        // Populate children for containers
+        for (Container container : containerMap.values()) {
+            TreeItem<String> containerNode = itemTreeMap.get(container.getName());
+            List<Item> containedItems = container.getContainedItems();
+
+            for (Item containedItem : containedItems) {
+                TreeItem<String> containedNode = itemTreeMap.get(containedItem.getName());
+                if (containedNode != null) {
+                    if (containedNode.getParent() == null) {
+                        containerNode.getChildren().add(containedNode);
+                    }
+                }
+            }
+        }
+
+        // Build the root of the tree and add orphaned items
+        TreeItem<String> root = new TreeItem<>("Items");
+        for (TreeItem<String> node : itemTreeMap.values()) {
+            if (node.getParent() == null) {
+                root.getChildren().add(node);
+            }
+        }
+        root.setExpanded(true);
+
+        // Recursively expand all children
+        expandAllNodes(root);
+
+        itemTreeView.setRoot(root);
+
+        // Now load items into the visual pane (dronePane)
+        loadItemsIntoVisualPane(containerMap);
+
+        // Return the root of the tree
+        return root;
     }
 
-    private void loadItemsIntoTable() {
-        ObservableList<Item> items = FXCollections.observableArrayList(DatabaseConnection.getItems());
-        itemTableView.setItems(items);
+    private void expandAllNodes(TreeItem<String> node) {
+        node.setExpanded(true);
+        for (TreeItem<String> child : node.getChildren()) {
+            expandAllNodes(child);  // Recursively expand child nodes
+        }
     }
+
+    private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
+        // Clear previous visual representations but retain drone, base, and labels
+        dronePane.getChildren().removeIf(node ->
+                !(node == animatedDrone || node == droneBase || node instanceof Label));
+
+        // Reset the tracking set
+        addedItems.clear();
+
+        // Get the root of the TreeView
+        TreeItem<String> root = itemTreeView.getRoot();
+        for (TreeItem<String> node : root.getChildren()) {
+            Item item = DatabaseConnection.getItemByName(node.getValue());
+            if (item != null) {
+                double x = item.getX();
+                double y = item.getY();
+                // Pass along existing visual representations
+                removeExistingVisual(item.getName());
+                loadItemNodeVisual(node, 0, x, y, containerMap);
+            }
+        }
+
+        // Re-add drone and base if necessary
+        if (animatedDrone != null && !dronePane.getChildren().contains(animatedDrone)) {
+            dronePane.getChildren().add(animatedDrone);
+        }
+        if (droneBase != null && !dronePane.getChildren().contains(droneBase)) {
+            dronePane.getChildren().add(droneBase);
+        }
+    }
+
+    private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
+
+        String itemName = node.getValue();
+        String itemType = DatabaseConnection.getItemByName(itemName).getType();
+        System.out.println(itemType);
+
+        // Check if the item has already been added
+        if (addedItems.contains(itemName)) {
+            return; // Skip if already added
+        }
+
+        // Mark the item as added
+        addedItems.add(itemName);
+
+        // Remove any existing visual elements for the current item to prevent duplicates
+        removeExistingVisual(itemName);
+
+        // Calculate size based on depth, where top-level containers are larger
+        double sizeFactor = 1 + (0.2 * (3 - depth)); // Scale factor that decreases with depth
+        double containerSize = 100 * sizeFactor; // Adjust container size for depth
+
+        // Skip drone and drone base creation here, as they are handled separately
+        if (itemType.equalsIgnoreCase("drone")) {
+            if (existingDrone == null) {
+                addDroneToPane(offsetX, offsetY);
+            }
+            return; // Return early since the drone is already added
+        } else if (itemType.equalsIgnoreCase("drone base")) {
+            if (existingDroneBase == null) {
+                addDroneBase();
+            }
+            return; // Return early since the drone base is already added
+        }
+
+        // Check if the current node has children. If it does, it's a container.
+        if (node.getChildren().isEmpty()) {
+            // Load non-container item
+            Rectangle itemRect = createVisualItem(itemType);
+            itemRect.setLayoutX(offsetX);
+            itemRect.setLayoutY(offsetY);
+            itemRect.setId(itemType); // Assign the itemType as the ID for uniqueness
+            dronePane.getChildren().add(itemRect);
+
+            // Set a higher view order for contained items (to appear above containers)
+            if (itemType.equalsIgnoreCase("field")) {
+                itemRect.setViewOrder(1); // Ensure fields appear above containers
+                fieldItems.add(itemRect); // Add field to the fieldItems list
+            }
+
+            // Add buffer space for next item
+            offsetY += 10;
+        } else {
+            // Load the container as a rectangle with adjusted size based on depth
+            Rectangle containerRect = new Rectangle(containerSize, containerSize); // Size adjusted for depth
+            containerRect.setId(itemType); // Assign the itemType as the ID for uniqueness
+
+            // If this container is a "field", make it green
+            if (itemType.equalsIgnoreCase("field")) {
+                containerRect.setStyle("-fx-fill: green; -fx-stroke: black; -fx-stroke-width: 2;");
+                fieldItems.add(containerRect); // Add this container to the fieldItems list
+            } else {
+                containerRect.setStyle("-fx-fill: lightgray; -fx-stroke: black; -fx-stroke-width: 2;");
+            }
+
+            containerRect.setLayoutX(offsetX);
+            containerRect.setLayoutY(offsetY);
+            dronePane.getChildren().add(containerRect);
+
+            // Set a lower view order for the container (so contained items appear above it)
+            containerRect.setViewOrder(0);
+
+            // Recursively load contained items within the container
+            double containedOffsetX = offsetX + 10;
+            double containedOffsetY = offsetY + 10;
+            for (TreeItem<String> child : node.getChildren()) {
+                loadItemNodeVisual(child, depth + 1, containedOffsetX, containedOffsetY, containerMap);
+                containedOffsetY += 10; // Buffer space between contained items
+            }
+        }
+    }
+
+    private void removeExistingVisual(String itemName) {
+        // Remove from the dronePane if it exists
+        dronePane.getChildren().removeIf(node -> {
+            if (node instanceof Rectangle) {
+                Rectangle rect = (Rectangle) node;
+                return rect.getId() != null && rect.getId().equals(itemName);
+            }
+            return false;
+        });
+
+        // Remove from the fieldItems list if it exists
+        fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemName));
+    }
+
 
     @FXML public void addItemToPane() {
         openItemDetailsPopup();
@@ -84,62 +245,47 @@ public class ApplicationController {
             if (controller.isItemCreated()) {
                 Item item = controller.getItem();
                 DatabaseConnection.insertItem(item);
-                addItemToPaneFromDatabase(item);
-                loadItemsIntoTable();
+                loadItemsIntoTree();
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void addItemToPaneFromDatabase(Item item) {
-        if ("drone".equals(item.getType())) {
-            addDroneToPane(item.getX(),item.getY());
-        } else if ("drone base".equals(item.getType())) {
-            addDroneBase();
-        } else {
-            // Otherwise, handle other items as usual
-            Rectangle itemRectangle = createVisualItem(item.getType());
-            itemRectangle.setLayoutX(item.getX());
-            itemRectangle.setLayoutY(item.getY());
-            dronePane.getChildren().add(itemRectangle);
-            if ("field".equals(item.getType())) {
-                fieldItems.add(itemRectangle); // Add field items to the list
-            }
+    private Rectangle createVisualItem(String itemType) {
+        Rectangle item = new Rectangle(50, 50);
+        item.setId(itemType); // Assign identifier for easier management
+        switch (itemType.toLowerCase()) {
+            case "field":
+                item.setStyle("-fx-fill: green;");
+                break;
+            case "pasture":
+                item.setStyle("-fx-fill: lightgreen;");
+                break;
+            default:
+                item.setStyle("-fx-fill: gray;");
+                break;
         }
+        return item;
     }
 
-    // Method to add the animated drone to the pane
     private void addDroneToPane(double x, double y) {
-        if (animatedDrone == null) { // Ensure only one drone is added
-            animatedDrone = new Circle(10); // A drone represented as a circle, radius 10
-            animatedDrone.setLayoutX(x); // Initial X position
-            animatedDrone.setLayoutY(y); // Initial Y position
-            dronePane.getChildren().add(animatedDrone); // Add to the Pane
+        if (animatedDrone == null) {
+            animatedDrone = new Circle(10);
+            animatedDrone.setLayoutX(x);
+            animatedDrone.setLayoutY(y);
+            dronePane.getChildren().add(animatedDrone);
         }
     }
 
-    // Method to add the drone base
     private void addDroneBase() {
-        if (droneBase == null) { // Ensure only one base is added
+        if (droneBase == null) {
             droneBase = new Rectangle(50, 50);
-            droneBase.setLayoutX(350); // Position for the drone base
+            droneBase.setLayoutX(350);
             droneBase.setLayoutY(350);
             droneBase.setStyle("-fx-fill: brown;");
             dronePane.getChildren().add(droneBase);
         }
-    }
-
-
-    private Rectangle createVisualItem(String itemType) {
-        Rectangle item = new Rectangle(50, 50); // Default size
-        switch (itemType) {
-            case "field": item.setStyle("-fx-fill: green;"); break;
-            case "pasture": item.setStyle("-fx-fill: lightgreen;"); break;
-            default: item.setStyle("-fx-fill: gray;");
-        }
-        item.setStyle(item.getStyle() + " -fx-stroke: black; -fx-stroke-width: 2;");
-        return item;
     }
 
     @FXML private void onCropDataCollect() {
@@ -148,16 +294,20 @@ public class ApplicationController {
             return;
         }
         statusLabel.setText("Collecting crop growth data...");
+
         // Initialize the drone animation
         DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
         String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+
         // Create transitions for moving the drone to each field and then back to the base
         List<SequentialTransition> transitions = new ArrayList<>();
+
         // Loop through field items and create a move transition for each field
         for (Rectangle field : fieldItems) {
             CropGrowthData cropData = findOrCreateCropData(field);
             cropData.increaseGrowthLevel();
             cropData.setTimestamp(timestamp);
+
             // Create the transition for moving the drone to the field
             SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
             moveToField.setOnFinished(event -> {
@@ -166,15 +316,23 @@ public class ApplicationController {
             });
             transitions.add(moveToField);
         }
+
         // Create the transition for the drone to return to the base
         SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
         returnToBase.setOnFinished(event -> {
             statusLabel.setText("System ready.");
         });
         transitions.add(returnToBase);
+
         // Combine all transitions and play them sequentially
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
+
+        // Debugging: confirm that all transitions are set
+        allTransitions.setOnFinished(event -> {
+            statusLabel.setText("System ready.");
+        });
+
         allTransitions.play();
     }
 
@@ -192,7 +350,7 @@ public class ApplicationController {
         return newData;
     }
 
-    @FXML public void onViewChartButtonClicked() {
+    @FXML public void onViewGrowthChartButtonClicked() {
         try {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("growthChartView.fxml"));
             Parent root = fxmlLoader.load();
@@ -221,5 +379,4 @@ public class ApplicationController {
             }
         }
     }
-
 }

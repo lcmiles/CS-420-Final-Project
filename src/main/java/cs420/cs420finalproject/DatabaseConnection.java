@@ -2,7 +2,9 @@ package cs420.cs420finalproject;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class DatabaseConnection {
 
@@ -13,7 +15,7 @@ public class DatabaseConnection {
         Connection conn = null;
         try {
             conn = DriverManager.getConnection(DB_URL);
-            System.out.println("Connected to SQLite database.");
+            //System.out.println("Connected to SQLite database.");
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -67,30 +69,82 @@ public class DatabaseConnection {
         }
     }
 
-    // Get items from the database
+
+    public static void insertContainedItem(Container container, Item item) {
+        String sql = "INSERT INTO contained_items (container_name, item_name) VALUES(?, ?)";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, container.getName());
+            pstmt.setString(2, item.getName());
+            pstmt.executeUpdate();
+            System.out.println("Contained item inserted: " + item.getName() + " in container: " + container.getName());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+
     public static List<Item> getItems() {
         List<Item> items = new ArrayList<>();
+        Map<String, Container> containerMap = new HashMap<>();
+
         try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
             String sql = "SELECT * FROM items ORDER BY id";
             ResultSet rs = stmt.executeQuery(sql);
+
+            // First pass: Add items to their respective lists and check if they are containers
             while (rs.next()) {
                 String name = rs.getString("name");
                 String type = rs.getString("type");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
-                // Creating a simple item object, no container logic needed anymore
-                Item item = new Item(name, type, x, y) {
-                    @Override
-                    public void saveToDatabase() {
-                        insertItem(this); // Save to database
+
+                // Create an item as usual
+                Item item = new Item(name, type, x, y);
+
+                // Check if the item is a container
+                if (isContainer(name)) {
+                    Container container = new Container(name, type, x, y);
+                    containerMap.put(name, container);  // Add the container to the map
+                    items.add(container);  // Add the container to the list
+                } else {
+                    items.add(item);  // Regular item, add to the list
+                }
+            }
+
+            // Second pass: Add contained items to their respective containers
+            sql = "SELECT container_name, item_name FROM contained_items";
+            rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String containerName = rs.getString("container_name");
+                String itemName = rs.getString("item_name");
+
+                Container container = containerMap.get(containerName);
+                if (container != null) {
+                    Item item = getItemByName(itemName); // Retrieve the item by name
+                    if (item != null) {
+                        container.addItem(item); // Add the item to the container's containedItems list
                     }
-                };
-                items.add(item);
+                }
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving items: " + e.getMessage());
         }
+
         return items;
+    }
+
+    private static boolean isContainer(String itemName) {
+        String sql = "SELECT COUNT(*) FROM contained_items WHERE container_name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, itemName);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;  // If count > 0, it's a container
+            }
+        } catch (SQLException e) {
+            System.out.println("Error checking if item is a container: " + e.getMessage());
+        }
+        return false;
     }
 
     // Get item by name from the database
@@ -115,6 +169,81 @@ public class DatabaseConnection {
         return null;
     }
 
+    // Get a list of all contained items (i.e., items that are part of containers)
+    public static List<Item> getContainedItems() {
+        List<Item> containedItems = new ArrayList<>();
+
+        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+            String sql = "SELECT item_name FROM contained_items";
+            ResultSet rs = stmt.executeQuery(sql);
+
+            // Retrieve each contained item and add it to the list
+            while (rs.next()) {
+                String itemName = rs.getString("item_name");
+                Item item = getItemByName(itemName);  // Retrieve item by its name
+                if (item != null) {
+                    containedItems.add(item);  // Add item to the list
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving contained items: " + e.getMessage());
+        }
+
+        return containedItems;
+    }
+
+    // Get the container for a specific item
+    public static Container getContainerForItem(Item item) {
+        Container container = null;
+        String sql = "SELECT container_name FROM contained_items WHERE item_name = ?";
+
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, item.getName());
+            ResultSet rs = pstmt.executeQuery();
+
+            // If a container is found, fetch it from the database
+            if (rs.next()) {
+                String containerName = rs.getString("container_name");
+                container = getContainerByName(containerName);  // Method to get container by its name
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving container for item: " + e.getMessage());
+        }
+        return container;
+    }
+
+    // Helper method to get a container by its name
+    public static Container getContainerByName(String containerName) {
+        for (Item item : getItems()) {
+            if (item instanceof Container && item.getName().equals(containerName)) {
+                return (Container) item;
+            }
+        }
+        return null;
+    }
+
+    public static List<Item> getContainedItemsForContainer(Container container) {
+        List<Item> containedItems = new ArrayList<>();
+        String sql = "SELECT item_name FROM contained_items WHERE container_name = ?";
+
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, container.getName());
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String itemName = rs.getString("item_name");
+                Item item = getItemByName(itemName); // Fetch item details
+                if (item != null) {
+                    containedItems.add(item);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching contained items for container: " + e.getMessage());
+        }
+
+        return containedItems;
+    }
+
     // Initialize the database (tables creation)
     public static void initializeDatabase() {
         try (Connection conn = connect()) {
@@ -136,6 +265,15 @@ public class DatabaseConnection {
                         " field_id text NOT NULL\n" + // Add field_id column
                         ");";
                 conn.createStatement().execute(cropGrowthSql);
+                // Create the contained items table
+                String containedItemsSql = "CREATE TABLE IF NOT EXISTS contained_items (\n" +
+                        " id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
+                        " container_name TEXT NOT NULL,\n" +
+                        " item_name TEXT NOT NULL,\n" +
+                        " FOREIGN KEY(container_name) REFERENCES items(name),\n" +
+                        " FOREIGN KEY(item_name) REFERENCES items(name)\n" +
+                        ");";
+                conn.createStatement().execute(containedItemsSql);
                 System.out.println("Database initialized.");
             }
         } catch (SQLException e) {

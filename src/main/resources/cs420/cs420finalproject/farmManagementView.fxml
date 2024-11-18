@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
@@ -7,79 +8,115 @@
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.SplitPane?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.ToolBar?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="648.0" prefWidth="1062.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.ApplicationController">
-    <children>
-        <MenuBar prefHeight="25.0" prefWidth="1062.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-            <menus>
-                <Menu mnemonicParsing="false" text="File">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="Close" />
-                    </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Edit">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="Delete" />
-                    </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Help">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="About" />
-                    </items>
-                </Menu>
-            </menus>
-        </MenuBar>
-        <ToolBar layoutY="25.0" prefHeight="40.0" prefWidth="1062.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="25.0">
-            <items>
-                <Button onAction="#addItemToPane" text="Add Item" />
-            </items>
-        </ToolBar>
-        <SplitPane dividerPositions="0.5" layoutY="65.0" prefHeight="583.0" prefWidth="1062.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="65.0">
-            <items>
-                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="527.0" prefWidth="528.0">
-                    <children>
-                  <SplitPane dividerPositions="0.5" layoutX="1.0" layoutY="305.0" orientation="VERTICAL" prefHeight="276.0" prefWidth="527.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="305.0">
-                    <items>
-                              <TableView fx:id="itemTableView" prefHeight="0.0" prefWidth="525.0">
-                                  <columns>
-                                      <TableColumn fx:id="nameColumn" prefWidth="176.0" text="Name" />
-                                      <TableColumn fx:id="typeColumn" prefWidth="154.0" text="Type" />
-                                      <TableColumn prefWidth="103.0" text="X Coordinate" fx:id="xColumn" />
-                                      <TableColumn fx:id="yColumn" prefWidth="93.0" text="Y Coordinate" />
-                                  </columns>
-                              </TableView>
-                              <TextArea fx:id="logs" editable="false" prefHeight="102.0" prefWidth="527.0" />
-                    </items>
-                  </SplitPane>
-                  <Text layoutX="188.0" layoutY="27.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Crop Growth Data" wrappingWidth="152.0">
-                     <font>
+<VBox prefHeight="963.0" prefWidth="2000.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.ApplicationController">
+    <MenuBar prefHeight="25.0" prefWidth="1062.0">
+        <menus>
+            <Menu mnemonicParsing="false" text="File">
+                <items>
+                    <MenuItem mnemonicParsing="false" text="Close" />
+                </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Edit">
+                <items>
+                    <MenuItem mnemonicParsing="false" text="Delete" />
+                </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Help">
+                <items>
+                    <MenuItem mnemonicParsing="false" text="About" />
+                </items>
+            </Menu>
+        </menus>
+    </MenuBar>
+    <ToolBar prefHeight="40.0" prefWidth="1062.0">
+        <items>
+            <Button onAction="#addItemToPane" text="Add Item" />
+        </items>
+    </ToolBar>
+    <SplitPane dividerPositions="0.32982982982982983, 0.5" prefHeight="908.0" prefWidth="1708.0" VBox.vgrow="ALWAYS">
+        <items>
+            <VBox alignment="TOP_CENTER" spacing="10.0">
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Crop Growth Data" wrappingWidth="152.0">
+                    <font>
                         <Font size="18.0" />
-                     </font>
-                  </Text>
-                  <Separator layoutX="-7.0" layoutY="77.0" prefHeight="11.0" prefWidth="535.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" />
-                        <Button fx:id="viewChartButton" layoutX="354.0" layoutY="38.0" minWidth="68.0" onAction="#handleHarvestCrops" prefHeight="25.0" text="Harvest Crops" />
-                        <Button layoutX="23.0" layoutY="38.0" onAction="#onCropDataCollect" text="Collect Crop Growth Data" />
-                        <Button fx:id="harvestButton" layoutX="192.0" layoutY="38.0" minWidth="0.0" onAction="#onViewChartButtonClicked" prefHeight="25.0" prefWidth="144.0" text="View Growth Chart" />
-                    </children>
-                </AnchorPane>
-                <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="581.0" prefWidth="563.0">
+                    </font>
+               <VBox.margin>
+                  <Insets top="20.0" />
+               </VBox.margin>
+                </Text>
+            <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
+               <children>
+                       <Button onAction="#onCropDataCollect" text="Collect Crop Growth Data" />
+                       <Button onAction="#onViewGrowthChartButtonClicked" text="View Crop Growth Chart" />
+                       <Button onAction="#handleHarvestCrops" text="Harvest Crops" />
+               </children>
+            </HBox>
+                <Separator prefHeight="11.0" prefWidth="535.0" />
+<!--            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Soil Moisture Data" wrappingWidth="152.0">-->
+<!--               <font>-->
+<!--                  <Font size="18.0" />-->
+<!--               </font>-->
+<!--            </Text>-->
+<!--            <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">-->
+<!--               <children>-->
+<!--                  <Button onAction="#onSoilDataCollect" text="Collect Soil Moisture Data" />-->
+<!--                  <Button onAction="#onViewSoilChartButtonClicked" text="View Soil Moisture Chart" />-->
+<!--                  <Button onAction="#handleWaterCrops" text="Water Crops" />-->
+<!--               </children>-->
+<!--            </HBox>-->
+<!--            <Separator prefHeight="11.0" prefWidth="535.0" />-->
+<!--            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Pest Infestation Data" wrappingWidth="165.0">-->
+<!--               <font>-->
+<!--                  <Font size="18.0" />-->
+<!--               </font>-->
+<!--            </Text>-->
+<!--            <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">-->
+<!--               <children>-->
+<!--                  <Button onAction="#onPestDataCollect" text="Collect Pest Infestation Data" />-->
+<!--                  <Button onAction="#onViewPestChartButtonClicked" text="View Pest Infestation Data" />-->
+<!--                  <Button onAction="#handleSprayPesticide" text="Spray Pesticide" />-->
+<!--               </children>-->
+<!--            </HBox>-->
+<!--            <Separator prefHeight="11.0" prefWidth="535.0" />-->
+<!--            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Livestock Feeding Data" wrappingWidth="185.0">-->
+<!--               <font>-->
+<!--                  <Font size="18.0" />-->
+<!--               </font>-->
+<!--            </Text>-->
+<!--            <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">-->
+<!--               <children>-->
+<!--                  <Button onAction="#onLivstockDataCollect" text="Collect Livestock Feeding Data" />-->
+<!--                  <Button onAction="#onViewLivestockChartButtonClicked" text="View Livestock Feeding Data" />-->
+<!--                  <Button onAction="#handleFeedLivestock" text="Feed Livestock" />-->
+<!--               </children>-->
+<!--            </HBox>-->
+<!--            <Separator prefHeight="11.0" prefWidth="535.0" />-->
+                  <TextArea fx:id="logs" editable="false" prefHeight="442.0" prefWidth="923.0" VBox.vgrow="ALWAYS" />
+            </VBox>
+         <VBox prefHeight="581.0" prefWidth="17.0">
+            <children>
+                     <TreeView fx:id="itemTreeView" prefHeight="926.0" prefWidth="577.0" VBox.vgrow="ALWAYS" />
+            </children>
+         </VBox>
+            <VBox spacing="10.0">
+                <Pane fx:id="dronePane" layoutX="800.0" layoutY="600.0" prefHeight="900.0" prefWidth="900.0" style="-fx-border-color: black;" VBox.vgrow="ALWAYS">
                     <children>
-                        <Pane fx:id="dronePane" prefHeight="581.0" prefWidth="563.0" style="-fx-border-color: black;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
-                     <children>
-                              <Label fx:id="statusLabel" layoutX="45.0" layoutY="2.0" prefHeight="17.0" prefWidth="200" text="System ready." />
-                              <Text layoutX="3.0" layoutY="15.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
-                     </children></Pane>
+                        <Label fx:id="statusLabel" layoutX="14.0" layoutY="6.0" text="System ready.">
+                     <graphic>
+                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
+                     </graphic></Label>
                     </children>
-                </AnchorPane>
-            </items>
-        </SplitPane>
-    </children>
-</AnchorPane>
+                </Pane>
+            </VBox>
+        </items>
+    </SplitPane>
+</VBox>
