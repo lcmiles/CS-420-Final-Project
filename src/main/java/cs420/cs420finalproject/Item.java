@@ -32,6 +32,14 @@ public class Item {
         return y;
     }
 
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true; // Check if the objects are the same reference

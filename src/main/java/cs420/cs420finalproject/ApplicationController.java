@@ -38,42 +38,32 @@ public class ApplicationController {
         for (CropGrowthData data : savedCropData) {
             cropDataMap.put(data.getFieldId(), data);
         }
-        renderItems(); // Render all items with the correct order
+        renderItems();
         loadItemsIntoTree();
-
-        // Redirect System.out to the TextArea
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
     private void loadItemsIntoTree() {
-        // Load all items from the database
         List<Item> savedItems = DatabaseConnection.getItems();
-        Map<String, TreeItem<String>> itemTreeMap = new HashMap<>(); // Map to track TreeItems by item name
-        Map<String, Container> containerMap = new HashMap<>(); // Map to track containers by name
+        Map<String, TreeItem<String>> itemTreeMap = new HashMap<>();
+        Map<String, Container> containerMap = new HashMap<>();
 
-        // First pass: Create tree nodes for all items and containers
         for (Item item : savedItems) {
             TreeItem<String> itemNode = new TreeItem<>(item.getName());
-            itemTreeMap.put(item.getName(), itemNode); // Map the tree node to the item's name
+            itemTreeMap.put(item.getName(), itemNode);
 
-            // If the item is a container, track it
             if (item instanceof Container) {
                 containerMap.put(item.getName(), (Container) item);
             }
         }
 
-        // Second pass: Link contained items and sub-containers
         for (Container container : containerMap.values()) {
             TreeItem<String> containerNode = itemTreeMap.get(container.getName());
-
-            // Retrieve contained items for the container
             List<Item> containedItems = container.getContainedItems();
 
-            // Add contained items as children of the container node
             for (Item containedItem : containedItems) {
                 TreeItem<String> containedNode = itemTreeMap.get(containedItem.getName());
                 if (containedNode != null) {
-                    // Ensure the contained node has not been linked to another container
                     if (containedNode.getParent() == null) {
                         containerNode.getChildren().add(containedNode);
                     }
@@ -81,20 +71,13 @@ public class ApplicationController {
             }
         }
 
-        // Build the root of the tree
-        TreeItem<String> root = new TreeItem<>("Items"); // Root node for the TreeView
-
-        // Add top-level items (not contained in any container) to the root
+        TreeItem<String> root = new TreeItem<>("Items");
         for (TreeItem<String> node : itemTreeMap.values()) {
-            if (node.getParent() == null) { // Only add nodes that are not yet attached to a parent
+            if (node.getParent() == null) {
                 root.getChildren().add(node);
             }
         }
-
-        // Always expand the root node
         root.setExpanded(true);
-
-        // Set the root node to the TreeView
         itemTreeView.setRoot(root);
     }
 
@@ -130,9 +113,36 @@ public class ApplicationController {
         } else if ("drone base".equals(item.getType())) {
             addDroneBase();
         } else if (item instanceof Container) {
-            addContainerToPane((Container) item, addedItems, calculateContainerDepth((Container) item));
+            Container container = (Container) item;
+            Rectangle containerRectangle = createVisualItem(item.getType());
+            containerRectangle.setLayoutX(item.getX());
+            containerRectangle.setLayoutY(item.getY());
+            containerRectangle.setStyle("-fx-stroke: black; -fx-stroke-width: 2;");
+            dronePane.getChildren().add(containerRectangle);
+
+            List<Item> containedItems = container.getContainedItems();
+            double containerX = item.getX();
+            double containerY = item.getY();
+            double offsetX = 10;
+            double offsetY = 10;
+
+            for (Item containedItem : containedItems) {
+                Rectangle containedRectangle = createVisualItem(containedItem.getType());
+                containedRectangle.setLayoutX(containerX + offsetX);
+                containedRectangle.setLayoutY(containerY + offsetY);
+                containedRectangle.setScaleX(0.8);
+                containedRectangle.setScaleY(0.8);
+                dronePane.getChildren().add(containedRectangle);
+                offsetX += 60;
+                if (offsetX > 100) {
+                    offsetX = 10;
+                    offsetY += 60;
+                }
+                if (containedItem instanceof Container) {
+                    addNestedContainers((Container) containedItem, offsetX, offsetY);
+                }
+            }
         } else {
-            // Handle regular items
             Rectangle itemRectangle = createVisualItem(item.getType());
             itemRectangle.setLayoutX(item.getX());
             itemRectangle.setLayoutY(item.getY());
@@ -141,20 +151,19 @@ public class ApplicationController {
     }
 
     private void addContainerToPane(Container container, Set<String> addedItems, int depth) {
-        // Adjust size based on container depth
+        // Create the container visual element (rectangle)
         double containerWidth = 100 + depth * 50;
         double containerHeight = 100 + depth * 50;
-
-        // Create the container's visual representation
         Rectangle containerRectangle = new Rectangle(containerWidth, containerHeight);
         containerRectangle.setStyle("-fx-fill: lightgray; -fx-stroke: black; -fx-stroke-width: 2;");
         containerRectangle.setLayoutX(container.getX());
         containerRectangle.setLayoutY(container.getY());
-
-        // Add container to the pane
         dronePane.getChildren().add(containerRectangle);
 
-        // Position items inside the container and render them
+        // Track items that have been added to prevent duplicates
+        addedItems.add(container.getName());
+
+        // Add contained items (not containers) to the current container
         double padding = 10;
         double itemSize = (containerRectangle.getWidth() - 2 * padding) / 2;
         double startX = containerRectangle.getLayoutX() + padding;
@@ -162,98 +171,95 @@ public class ApplicationController {
 
         int index = 0;
         for (Item containedItem : container.getContainedItems()) {
-            // Prevent adding the same item multiple times
             if (!addedItems.contains(containedItem.getName())) {
                 Rectangle containedRectangle = createVisualItem(containedItem.getType());
                 containedRectangle.setWidth(itemSize);
                 containedRectangle.setHeight(itemSize);
-
-                // Calculate position of the contained item
                 double offsetX = index % 2 == 0 ? 0 : itemSize + padding;
                 double offsetY = index / 2 * (itemSize + padding);
-
                 containedRectangle.setLayoutX(startX + offsetX);
                 containedRectangle.setLayoutY(startY + offsetY);
-
-                // Add item to pane
                 dronePane.getChildren().add(containedRectangle);
-                addedItems.add(containedItem.getName()); // Mark item as added
+                addedItems.add(containedItem.getName());
                 index++;
             }
         }
 
-        // Recursively render items in nested containers
+        // Recursively add sub-containers
         for (Item containedItem : container.getContainedItems()) {
             if (containedItem instanceof Container) {
-                addContainerToPane((Container) containedItem, addedItems, depth + 1); // Increase depth for nested containers
+                // Properly adjust the offset for sub-containers to place them within the parent container
+                addContainerToPane((Container) containedItem, addedItems, depth + 1);
             }
         }
     }
 
-    private int calculateContainerDepth(Container container) {
-        int depth = 0;
-        Container parentContainer = container.getParentContainer(); // Assuming each container has a reference to its parent
-        while (parentContainer != null) {
-            depth++;
-            parentContainer = parentContainer.getParentContainer();
-        }
-        return depth;
-    }
 
     private void renderItems() {
-        Set<String> addedItems = new HashSet<>(); // Set to track added items
-
-        // First, add all containers and their contained items
+        Set<String> addedItems = new HashSet<>();
         for (Item item : DatabaseConnection.getItems()) {
-            if (item instanceof Container) {
-                addContainerToPane((Container) item, addedItems, calculateContainerDepth((Container) item)); // Pass the set to avoid duplicates
+            if (item instanceof Container && !addedItems.contains(item.getName())) {
+                addContainerToPane((Container) item, addedItems, 0);  // Start with depth 0 for root containers
             }
         }
 
-        // Next, add non-container items
+        // Now add non-container items (those that are not in containers)
         for (Item item : DatabaseConnection.getItems()) {
+            System.out.println("Item type: " + item.getClass().getName());
             if (!(item instanceof Container) && !addedItems.contains(item.getName())) {
-                // Avoid duplicate addition if the item is already added as part of a container
                 Rectangle itemRectangle = createVisualItem(item.getType());
                 itemRectangle.setLayoutX(item.getX());
                 itemRectangle.setLayoutY(item.getY());
                 dronePane.getChildren().add(itemRectangle);
-                addedItems.add(item.getName()); // Mark as added
+                addedItems.add(item.getName());
             }
         }
     }
 
-
-    // Method to add the animated drone to the pane
     private void addDroneToPane(double x, double y) {
-        if (animatedDrone == null) { // Ensure only one drone is added
-            animatedDrone = new Circle(10); // A drone represented as a circle, radius 10
-            animatedDrone.setLayoutX(x); // Initial X position
-            animatedDrone.setLayoutY(y); // Initial Y position
-            dronePane.getChildren().add(animatedDrone); // Add to the Pane
+        if (animatedDrone == null) {
+            animatedDrone = new Circle(10);
+            animatedDrone.setLayoutX(x);
+            animatedDrone.setLayoutY(y);
+            dronePane.getChildren().add(animatedDrone);
         }
     }
 
-    // Method to add the drone base
     private void addDroneBase() {
-        if (droneBase == null) { // Ensure only one base is added
+        if (droneBase == null) {
             droneBase = new Rectangle(50, 50);
-            droneBase.setLayoutX(350); // Position for the drone base
+            droneBase.setLayoutX(350);
             droneBase.setLayoutY(350);
             droneBase.setStyle("-fx-fill: brown;");
             dronePane.getChildren().add(droneBase);
         }
     }
 
-
     private Rectangle createVisualItem(String itemType) {
-        Rectangle item = new Rectangle(50, 50); // Default size
+        Rectangle item = new Rectangle(50, 50);
         switch (itemType) {
             case "field": item.setStyle("-fx-fill: green;"); break;
             case "pasture": item.setStyle("-fx-fill: lightgreen;"); break;
+            case "container": item.setStyle("-fx-fill: lightgray;"); break;
             default: item.setStyle("-fx-fill: gray;");
         }
         return item;
+    }
+
+    private void addNestedContainers(Container parentContainer, double offsetX, double offsetY) {
+        if (parentContainer != null) {
+            double width = 100;
+            double height = 100;
+            Rectangle containerRectangle = new Rectangle(width, height);
+            containerRectangle.setStyle("-fx-fill: lightblue;");
+            containerRectangle.setLayoutX(offsetX);
+            containerRectangle.setLayoutY(offsetY);
+            dronePane.getChildren().add(containerRectangle);
+
+            for (Item containedItem : parentContainer.getContainedItems()) {
+                addItemToPaneFromDatabase(containedItem);
+            }
+        }
     }
 
     @FXML private void onCropDataCollect() {
