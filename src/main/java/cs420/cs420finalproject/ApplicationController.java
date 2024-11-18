@@ -38,7 +38,6 @@ public class ApplicationController {
             cropDataMap.put(data.getFieldId(), data);
         }
         TreeItem<String> root = loadItemsIntoTree();
-        renderItemsFromTree(root);
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
@@ -51,6 +50,9 @@ public class ApplicationController {
         for (Item item : savedItems) {
             TreeItem<String> itemNode = new TreeItem<>(item.getName());
             itemTreeMap.put(item.getName(), itemNode);
+
+            // Debug: Print item class type and order
+            System.out.println("Loading item: " + item.getName() + " | Class: " + item.getClass().getName());
 
             if (item instanceof Container) {
                 containerMap.put(item.getName(), (Container) item);
@@ -82,21 +84,58 @@ public class ApplicationController {
         root.setExpanded(true);
         itemTreeView.setRoot(root);
 
-        printTreeStructure(root,0);
+        // Now load items into the visual pane (dronePane)
+        loadItemsIntoVisualPane(containerMap);
 
         // Return the root of the tree
         return root;
     }
 
-    // Helper method to print the tree structure
-    private void printTreeStructure(TreeItem<String> node, int depth) {
-        String indent = "  ".repeat(depth); // Create indentation based on depth
-        System.out.println(indent + node.getValue());
-        for (TreeItem<String> child : node.getChildren()) {
-            printTreeStructure(child, depth + 1); // Recursively print children
+
+    private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
+        // Iterate through the root's children (which now include items and containers)
+        TreeItem<String> root = itemTreeView.getRoot();
+        for (TreeItem<String> node : root.getChildren()) {
+            // For top-level node, use actual coordinates (e.g., from item data)
+            Item item = DatabaseConnection.getItemByName(node.getValue());
+            double x = item.getX();
+            double y = item.getY();
+            loadItemNodeVisual(node, 0, x, y);
         }
     }
 
+    private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY) {
+        // Calculate size based on depth, where top-level containers are larger
+        double sizeFactor = 1 + (0.2 * (3 - depth)); // Scale factor that decreases with depth
+        double containerSize = 100 * sizeFactor;  // Adjust container size for depth
+
+        // Check if the current node has children. If it does, it's a container.
+        if (node.getChildren().isEmpty()) {
+            // Load non-container item
+            Rectangle itemRect = createVisualItem(node.getValue());
+            itemRect.setLayoutX(offsetX);
+            itemRect.setLayoutY(offsetY);
+            dronePane.getChildren().add(itemRect);
+
+            // Add buffer space for next item
+            offsetY += 10;
+        } else {
+            // Load the container as a rectangle with adjusted size based on depth
+            Rectangle containerRect = new Rectangle(containerSize, containerSize);  // Size adjusted for depth
+            containerRect.setStyle("-fx-fill: lightgray; -fx-stroke: black; -fx-stroke-width: 2;");
+            containerRect.setLayoutX(offsetX);
+            containerRect.setLayoutY(offsetY);
+            dronePane.getChildren().add(containerRect);
+
+            // Recursively load contained items within the container
+            double containedOffsetX = offsetX + 10;
+            double containedOffsetY = offsetY + 10;
+            for (TreeItem<String> child : node.getChildren()) {
+                loadItemNodeVisual(child, depth + 1, containedOffsetX, containedOffsetY);
+                containedOffsetY += 10;  // Buffer space between contained items
+            }
+        }
+    }
 
     @FXML public void addItemToPane() {
         openItemDetailsPopup();
@@ -117,116 +156,10 @@ public class ApplicationController {
                 Item item = controller.getItem();
                 DatabaseConnection.insertItem(item);
                 loadItemsIntoTree();
-                renderItemsFromTree(itemTreeView.getRoot());
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private void renderItemsFromTree(TreeItem<String> rootNode) {
-        // Create a set to track added items and prevent duplication
-        Set<String> addedItems = new HashSet<>();
-        // Loop over all children of the root (not the root itself)
-        for (TreeItem<String> childNode : rootNode.getChildren()) {
-            renderTreeNode(childNode, addedItems, 1); // Start with depth 1 to skip rendering root
-        }
-    }
-
-    private void renderTreeNode(TreeItem<String> node, Set<String> addedItems, int depth) {
-        String itemName = node.getValue();
-
-        // Skip the root item by checking if it has the value "Items" (or whatever your root value is)
-        if (depth == 0) {
-            return; // Skip root node (this is the first level of depth)
-        }
-
-        // Fetch the item from the database by name
-        Item item = DatabaseConnection.getItemByName(itemName);
-
-        if (item == null || addedItems.contains(itemName)) {
-            return; // Skip if the item does not exist or is already rendered
-        }
-
-        System.out.println("Rendering " + (item instanceof Container ? "Container" : "Item") +
-                ": " + itemName + " at depth " + depth);
-
-        if (item instanceof Container) {
-            // Render container and its children
-            renderContainer((Container) item, node, addedItems, depth);
-        } else {
-            // Render regular item
-            renderItem(item);
-        }
-
-        // Mark the item as added
-        addedItems.add(itemName);
-
-        // Render children recursively
-        for (TreeItem<String> childNode : node.getChildren()) {
-            renderTreeNode(childNode, addedItems, depth + 1);
-        }
-    }
-
-    private void renderContainer(Container container, TreeItem<String> node, Set<String> addedItems, int depth) {
-
-        System.out.println("Rendering Container: " + container.getName() +
-                " at depth " + depth + " with position (" + container.getX() + ", " + container.getY() + ")");
-
-        // Create a visual representation for the container
-        double baseSize = 150; // Base size for containers
-        double containerWidth = baseSize + depth * 50; // Increase size with depth
-        double containerHeight = baseSize + depth * 50;
-        double padding = 10; // Padding for contained items
-
-        Rectangle containerRectangle = new Rectangle(containerWidth, containerHeight);
-        containerRectangle.setStyle("-fx-fill: lightgray; -fx-stroke: black; -fx-stroke-width: 2;");
-        containerRectangle.setLayoutX(container.getX());
-        containerRectangle.setLayoutY(container.getY());
-        dronePane.getChildren().add(containerRectangle);
-
-        // Calculate available space for child items inside the container
-        double innerWidth = containerWidth - 2 * padding;
-        double innerHeight = containerHeight - 2 * padding;
-        double itemSize = Math.min(innerWidth, innerHeight) / Math.max(2, node.getChildren().size()); // Adjust size based on the number of children
-
-        // Start position for child items inside the container
-        double startX = containerRectangle.getLayoutX() + padding;
-        double startY = containerRectangle.getLayoutY() + padding;
-
-        int index = 0; // Index to position items
-        for (TreeItem<String> childNode : node.getChildren()) {
-            Item childItem = DatabaseConnection.getItemByName(childNode.getValue());
-            if (childItem != null && !addedItems.contains(childItem.getName())) {
-                if (childItem instanceof Container) {
-                    // Render contained container recursively
-                    renderContainer((Container) childItem, childNode, addedItems, depth + 1);
-                } else {
-                    // Render a regular contained item
-                    Rectangle childRectangle = createVisualItem(childItem.getType());
-                    childRectangle.setWidth(itemSize);
-                    childRectangle.setHeight(itemSize);
-                    // Calculate position within the container grid
-                    double itemX = startX + (index % 2) * (itemSize + padding);
-                    double itemY = startY + (index / 2) * (itemSize + padding);
-                    childRectangle.setLayoutX(itemX);
-                    childRectangle.setLayoutY(itemY);
-                    dronePane.getChildren().add(childRectangle);
-                }
-                addedItems.add(childItem.getName());
-                index++;
-            }
-        }
-    }
-
-    private void renderItem(Item item) {
-        // Render regular items visually based on their type and coordinates
-        Rectangle itemRectangle = createVisualItem(item.getType());
-        itemRectangle.setLayoutX(item.getX());
-        itemRectangle.setLayoutY(item.getY());
-        System.out.println("Rendering Item: " + item.getName() +
-                " at position (" + item.getX() + ", " + item.getY() + ")");
-        dronePane.getChildren().add(itemRectangle);
     }
 
     private Rectangle createVisualItem(String itemType) {
