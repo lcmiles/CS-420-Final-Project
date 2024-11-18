@@ -68,14 +68,16 @@ public class ApplicationController {
             TreeItem<String> containerNode = itemTreeMap.get(container.getName());
 
             // Retrieve contained items for the container
-            List<Item> containedItems = container.getContainedItems(); // Lazily loaded from the database
+            List<Item> containedItems = container.getContainedItems();
 
             // Add contained items as children of the container node
             for (Item containedItem : containedItems) {
                 TreeItem<String> containedNode = itemTreeMap.get(containedItem.getName());
                 if (containedNode != null) {
-                    containerNode.getChildren().add(containedNode);
-                    System.out.println("Linked item " + containedItem.getName() + " to container " + container.getName());
+                    // Ensure the contained node has not been linked to another container
+                    if (containedNode.getParent() == null) {
+                        containerNode.getChildren().add(containedNode);
+                    }
                 }
             }
         }
@@ -90,32 +92,11 @@ public class ApplicationController {
             }
         }
 
+        // Always expand the root node
+        root.setExpanded(true);
+
         // Set the root node to the TreeView
         itemTreeView.setRoot(root);
-        System.out.println("Tree structure loaded successfully.");
-    }
-
-
-    // Recursively add contained items to a container's TreeItem
-    private void addContainedItemsToContainer(Container container, Map<String, TreeItem<String>> itemTreeMap) {
-        TreeItem<String> containerNode = itemTreeMap.get(container.getName());
-        if (containerNode != null) {
-            // Add contained items
-            for (Item containedItem : container.getContainedItems()) {
-                TreeItem<String> containedItemNode = itemTreeMap.get(containedItem.getName());
-                if (containedItemNode != null) {
-                    containerNode.getChildren().add(containedItemNode);
-                    System.out.println("Added contained item " + containedItem.getName() + " to container " + container.getName()); // Debug log
-                }
-            }
-
-            // Recursively add any nested containers
-            for (Item nestedItem : container.getContainedItems()) {
-                if (nestedItem instanceof Container) {
-                    addContainedItemsToContainer((Container) nestedItem, itemTreeMap);
-                }
-            }
-        }
     }
 
     @FXML public void addItemToPane() {
