@@ -101,11 +101,11 @@ public class DatabaseConnection {
                 // Create an item as usual
                 Item item = new Item(name, type, x, y);
 
-                // Now check if the item is a container by looking for it in the contained_items table
+                // Check if the item is a container
                 if (isContainer(name)) {
                     Container container = new Container(name, type, x, y);
                     containerMap.put(name, container);  // Add the container to the map
-                    items.add(container);  // Add the container to the items list
+                    items.add(container);  // Add the container to the list
                 } else {
                     items.add(item);  // Regular item, add to the list
                 }

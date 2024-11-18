@@ -5,9 +5,19 @@ import java.util.List;
 
 public class Container extends Item {
     private List<Item> containedItems;
+    private Container parentContainer; // To store the parent container
 
     public Container(String name, String type, double x, double y) {
         super(name, type, x, y);
+        this.containedItems = new ArrayList<>();
+    }
+
+    public void setParentContainer(Container parentContainer) {
+        this.parentContainer = parentContainer;
+    }
+
+    public Container getParentContainer() {
+        return parentContainer;
     }
 
     public void addItem(Item item) {

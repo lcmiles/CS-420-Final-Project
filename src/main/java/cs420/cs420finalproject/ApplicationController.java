@@ -30,6 +30,7 @@ public class ApplicationController {
     private Map<String, CropGrowthData> cropDataMap = new HashMap<>(); // Mapping of crop data
     @FXML private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
     @FXML private TreeView<String> itemTreeView; // TreeView to display all items
+    Set<String> addedItems = new HashSet<>(); // Set to track added items
 
     public void initialize() {
         statusLabel.setText("System ready.");
@@ -37,11 +38,9 @@ public class ApplicationController {
         for (CropGrowthData data : savedCropData) {
             cropDataMap.put(data.getFieldId(), data);
         }
-        List<Item> savedItems = DatabaseConnection.getItems();
-        for (Item item : savedItems) {
-            addItemToPaneFromDatabase(item);
-        }
+        renderItems(); // Render all items with the correct order
         loadItemsIntoTree();
+
         // Redirect System.out to the TextArea
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
@@ -127,20 +126,103 @@ public class ApplicationController {
 
     private void addItemToPaneFromDatabase(Item item) {
         if ("drone".equals(item.getType())) {
-            addDroneToPane(item.getX(),item.getY());
+            addDroneToPane(item.getX(), item.getY());
         } else if ("drone base".equals(item.getType())) {
             addDroneBase();
+        } else if (item instanceof Container) {
+            addContainerToPane((Container) item, addedItems, calculateContainerDepth((Container) item));
         } else {
-            // Otherwise, handle other items as usual
+            // Handle regular items
             Rectangle itemRectangle = createVisualItem(item.getType());
             itemRectangle.setLayoutX(item.getX());
             itemRectangle.setLayoutY(item.getY());
             dronePane.getChildren().add(itemRectangle);
-            if ("field".equals(item.getType())) {
-                fieldItems.add(itemRectangle); // Add field items to the list
+        }
+    }
+
+    private void addContainerToPane(Container container, Set<String> addedItems, int depth) {
+        // Adjust size based on container depth
+        double containerWidth = 100 + depth * 50;
+        double containerHeight = 100 + depth * 50;
+
+        // Create the container's visual representation
+        Rectangle containerRectangle = new Rectangle(containerWidth, containerHeight);
+        containerRectangle.setStyle("-fx-fill: lightgray; -fx-stroke: black; -fx-stroke-width: 2;");
+        containerRectangle.setLayoutX(container.getX());
+        containerRectangle.setLayoutY(container.getY());
+
+        // Add container to the pane
+        dronePane.getChildren().add(containerRectangle);
+
+        // Position items inside the container and render them
+        double padding = 10;
+        double itemSize = (containerRectangle.getWidth() - 2 * padding) / 2;
+        double startX = containerRectangle.getLayoutX() + padding;
+        double startY = containerRectangle.getLayoutY() + padding;
+
+        int index = 0;
+        for (Item containedItem : container.getContainedItems()) {
+            // Prevent adding the same item multiple times
+            if (!addedItems.contains(containedItem.getName())) {
+                Rectangle containedRectangle = createVisualItem(containedItem.getType());
+                containedRectangle.setWidth(itemSize);
+                containedRectangle.setHeight(itemSize);
+
+                // Calculate position of the contained item
+                double offsetX = index % 2 == 0 ? 0 : itemSize + padding;
+                double offsetY = index / 2 * (itemSize + padding);
+
+                containedRectangle.setLayoutX(startX + offsetX);
+                containedRectangle.setLayoutY(startY + offsetY);
+
+                // Add item to pane
+                dronePane.getChildren().add(containedRectangle);
+                addedItems.add(containedItem.getName()); // Mark item as added
+                index++;
+            }
+        }
+
+        // Recursively render items in nested containers
+        for (Item containedItem : container.getContainedItems()) {
+            if (containedItem instanceof Container) {
+                addContainerToPane((Container) containedItem, addedItems, depth + 1); // Increase depth for nested containers
             }
         }
     }
+
+    private int calculateContainerDepth(Container container) {
+        int depth = 0;
+        Container parentContainer = container.getParentContainer(); // Assuming each container has a reference to its parent
+        while (parentContainer != null) {
+            depth++;
+            parentContainer = parentContainer.getParentContainer();
+        }
+        return depth;
+    }
+
+    private void renderItems() {
+        Set<String> addedItems = new HashSet<>(); // Set to track added items
+
+        // First, add all containers and their contained items
+        for (Item item : DatabaseConnection.getItems()) {
+            if (item instanceof Container) {
+                addContainerToPane((Container) item, addedItems, calculateContainerDepth((Container) item)); // Pass the set to avoid duplicates
+            }
+        }
+
+        // Next, add non-container items
+        for (Item item : DatabaseConnection.getItems()) {
+            if (!(item instanceof Container) && !addedItems.contains(item.getName())) {
+                // Avoid duplicate addition if the item is already added as part of a container
+                Rectangle itemRectangle = createVisualItem(item.getType());
+                itemRectangle.setLayoutX(item.getX());
+                itemRectangle.setLayoutY(item.getY());
+                dronePane.getChildren().add(itemRectangle);
+                addedItems.add(item.getName()); // Mark as added
+            }
+        }
+    }
+
 
     // Method to add the animated drone to the pane
     private void addDroneToPane(double x, double y) {
@@ -171,7 +253,6 @@ public class ApplicationController {
             case "pasture": item.setStyle("-fx-fill: lightgreen;"); break;
             default: item.setStyle("-fx-fill: gray;");
         }
-        item.setStyle(item.getStyle() + " -fx-stroke: black; -fx-stroke-width: 2;");
         return item;
     }
 
