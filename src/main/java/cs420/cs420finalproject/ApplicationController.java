@@ -30,6 +30,8 @@ public class ApplicationController {
     @FXML private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
     @FXML private TreeView<String> itemTreeView; // TreeView to display all items
     Set<String> addedItems = new HashSet<>(); // Set to track added items
+    private Circle existingDrone;
+    private Rectangle existingDroneBase;
 
     public void initialize() {
         statusLabel.setText("System ready.");
@@ -100,45 +102,34 @@ public class ApplicationController {
     }
 
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
+
         // Store the drone and drone base before clearing
         Circle existingDrone = animatedDrone;
         Rectangle existingDroneBase = droneBase;
 
-        // Clear existing items from the visual pane (except drone and drone base)
-        dronePane.getChildren().clear();
-        System.out.println("Cleared all items from the pane.");
-
-        // Re-add the drone and drone base to the pane
-        if (existingDrone != null) {
-            dronePane.getChildren().add(existingDrone);
-            System.out.println("Re-added drone to the pane.");
-        }
-        if (existingDroneBase != null) {
-            dronePane.getChildren().add(existingDroneBase);
-            System.out.println("Re-added drone base to the pane.");
-        }
-
-        // Clear the set of added items to allow re-adding items
-        addedItems.clear();
+        // Clear existing items from the visual pane (except drone, drone base, and status label)
+        dronePane.getChildren().removeIf(node -> !(node instanceof Circle || node instanceof Rectangle || node instanceof Label));
 
         // Iterate through the root's children (which now include items and containers)
         TreeItem<String> root = itemTreeView.getRoot();
-        System.out.println("Loading items into visual pane...");
-
         for (TreeItem<String> node : root.getChildren()) {
-            // Debug print: show the current node being processed
-            System.out.println("Processing item: " + node.getValue());
-
             // For top-level node, use actual coordinates (e.g., from item data)
             Item item = DatabaseConnection.getItemByName(node.getValue());
-
-            // Debug print: show item information and coordinates
-            double x = item.getX();
-            double y = item.getY();
-            System.out.println("Item found: " + item.getName() + " | Coordinates: (" + x + ", " + y + ")");
-
-            loadItemNodeVisual(node, 0, x, y, containerMap);
+            if (item != null) {
+                double x = item.getX();
+                double y = item.getY();
+                loadItemNodeVisual(node, 0, x, y, containerMap);
+            }
         }
+
+        // Re-add the drone and drone base to the pane if not already present
+        if (existingDrone != null && !dronePane.getChildren().contains(existingDrone)) {
+            dronePane.getChildren().add(existingDrone);
+        }
+        if (existingDroneBase != null && !dronePane.getChildren().contains(existingDroneBase)) {
+            dronePane.getChildren().add(existingDroneBase);
+        }
+
     }
 
     private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
@@ -156,13 +147,18 @@ public class ApplicationController {
         double sizeFactor = 1 + (0.2 * (3 - depth)); // Scale factor that decreases with depth
         double containerSize = 100 * sizeFactor;  // Adjust container size for depth
 
+        // Skip drone and drone base creation here, as they are handled separately
         if (itemType.equalsIgnoreCase("drone")) {
-            // Handle drone creation
-            addDroneToPane(offsetX, offsetY);
+            // Handle drone creation, but only if not already added
+            if (existingDrone == null) {
+                addDroneToPane(offsetX, offsetY);
+            }
             return; // Return early since the drone is already added
         } else if (itemType.equalsIgnoreCase("drone base")) {
-            // Handle drone base creation
-            addDroneBase();
+            // Handle drone base creation, but only if not already added
+            if (existingDroneBase == null) {
+                addDroneBase();
+            }
             return; // Return early since the drone base is already added
         }
 
@@ -201,10 +197,8 @@ public class ApplicationController {
                 containedOffsetY += 10;  // Buffer space between contained items
             }
         }
-
-        // Debug print: show coordinates after loading items
-        System.out.println("Finished loading item: " + itemType + " at (" + offsetX + ", " + offsetY + ")");
     }
+
 
     @FXML public void addItemToPane() {
         openItemDetailsPopup();
