@@ -131,20 +131,6 @@ public class ApplicationController {
         }
     }
 
-    private void removeExistingVisual(String itemType) {
-        // Remove from the dronePane if it exists
-        dronePane.getChildren().removeIf(node -> {
-            if (node instanceof Rectangle) {
-                Rectangle rect = (Rectangle) node;
-                return rect.getId() != null && rect.getId().equals(itemType);
-            }
-            return false;
-        });
-
-        // Remove from the fieldItems list if it exists
-        fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemType));
-    }
-
     private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
         String itemType = node.getValue();
 
@@ -182,6 +168,7 @@ public class ApplicationController {
             Rectangle itemRect = createVisualItem(node.getValue());
             itemRect.setLayoutX(offsetX);
             itemRect.setLayoutY(offsetY);
+            itemRect.setId(itemType); // Assign the itemType as the ID for uniqueness
             dronePane.getChildren().add(itemRect);
 
             // Set a higher view order for contained items (to appear above containers)
@@ -195,6 +182,7 @@ public class ApplicationController {
         } else {
             // Load the container as a rectangle with adjusted size based on depth
             Rectangle containerRect = new Rectangle(containerSize, containerSize); // Size adjusted for depth
+            containerRect.setId(itemType); // Assign the itemType as the ID for uniqueness
 
             // If this container is a "field", make it green
             if (itemType.equalsIgnoreCase("field")) {
@@ -220,6 +208,21 @@ public class ApplicationController {
             }
         }
     }
+
+    private void removeExistingVisual(String itemType) {
+        // Remove from the dronePane if it exists
+        dronePane.getChildren().removeIf(node -> {
+            if (node instanceof Rectangle) {
+                Rectangle rect = (Rectangle) node;
+                return rect.getId() != null && rect.getId().equals(itemType);
+            }
+            return false;
+        });
+
+        // Remove from the fieldItems list if it exists
+        fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemType));
+    }
+
 
     @FXML public void addItemToPane() {
         openItemDetailsPopup();
