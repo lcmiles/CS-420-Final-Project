@@ -132,18 +132,21 @@ public class ApplicationController {
     }
 
     private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
-        String itemType = node.getValue();
+
+        String itemName = node.getValue();
+        String itemType = DatabaseConnection.getItemByName(itemName).getType();
+        System.out.println(itemType);
 
         // Check if the item has already been added
-        if (addedItems.contains(itemType)) {
+        if (addedItems.contains(itemName)) {
             return; // Skip if already added
         }
 
         // Mark the item as added
-        addedItems.add(itemType);
+        addedItems.add(itemName);
 
         // Remove any existing visual elements for the current item to prevent duplicates
-        removeExistingVisual(itemType);
+        removeExistingVisual(itemName);
 
         // Calculate size based on depth, where top-level containers are larger
         double sizeFactor = 1 + (0.2 * (3 - depth)); // Scale factor that decreases with depth
@@ -165,7 +168,7 @@ public class ApplicationController {
         // Check if the current node has children. If it does, it's a container.
         if (node.getChildren().isEmpty()) {
             // Load non-container item
-            Rectangle itemRect = createVisualItem(node.getValue());
+            Rectangle itemRect = createVisualItem(itemType);
             itemRect.setLayoutX(offsetX);
             itemRect.setLayoutY(offsetY);
             itemRect.setId(itemType); // Assign the itemType as the ID for uniqueness
@@ -209,18 +212,18 @@ public class ApplicationController {
         }
     }
 
-    private void removeExistingVisual(String itemType) {
+    private void removeExistingVisual(String itemName) {
         // Remove from the dronePane if it exists
         dronePane.getChildren().removeIf(node -> {
             if (node instanceof Rectangle) {
                 Rectangle rect = (Rectangle) node;
-                return rect.getId() != null && rect.getId().equals(itemType);
+                return rect.getId() != null && rect.getId().equals(itemName);
             }
             return false;
         });
 
         // Remove from the fieldItems list if it exists
-        fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemType));
+        fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemName));
     }
 
 
@@ -327,7 +330,6 @@ public class ApplicationController {
 
         // Debugging: confirm that all transitions are set
         allTransitions.setOnFinished(event -> {
-            System.out.println("All transitions completed.");
             statusLabel.setText("System ready.");
         });
 

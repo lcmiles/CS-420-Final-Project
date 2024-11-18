@@ -69,24 +69,19 @@ public class AddItemController {
         }
 
         boolean isContainer = containerCheckBox.isSelected();
-        System.out.println("Creating item. Is container: " + isContainer);
-
         // Create item or container based on checkbox
         if (isContainer) {
             String itemType = itemTypeField.getText();
             newItem = new Container(itemName, itemType, x, y);
-            System.out.println("Container created: " + newItem);
         } else {
             String itemType = itemTypeField.getText();
             newItem = new Item(itemName, itemType, x, y);
-            System.out.println("Regular item created: " + newItem);
         }
 
         // Add contained items to container if it's a container
         if (isContainer) {
             Container container = (Container) newItem;
             for (Item selectedItem : itemListView.getSelectionModel().getSelectedItems()) {
-                System.out.println("Adding contained item: " + selectedItem);
                 DatabaseConnection.insertContainedItem(container, selectedItem);
             }
         }
