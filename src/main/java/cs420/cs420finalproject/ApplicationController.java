@@ -32,13 +32,13 @@ public class ApplicationController {
     Set<String> addedItems = new HashSet<>(); // Set to track added items
 
     public void initialize() {
-        statusLabel.setText("System ready.");
         List<CropGrowthData> savedCropData = DatabaseConnection.getCropGrowthData();
         for (CropGrowthData data : savedCropData) {
             cropDataMap.put(data.getFieldId(), data);
         }
         loadItemsIntoTree();
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
+        statusLabel.setText("System ready.");
     }
 
     private TreeItem<String> loadItemsIntoTree() {
@@ -107,8 +107,8 @@ public class ApplicationController {
         Circle existingDrone = animatedDrone;
         Rectangle existingDroneBase = droneBase;
 
-        // Clear existing items from the visual pane (except drone and drone base)
-        dronePane.getChildren().removeIf(node -> !(node instanceof Circle || node instanceof Rectangle));
+        // Clear existing items from the visual pane (except drone, drone base, and status label)
+        dronePane.getChildren().removeIf(node -> !(node instanceof Circle || node instanceof Rectangle || node instanceof Label));
 
         // Iterate through the root's children (which now include items and containers)
         TreeItem<String> root = itemTreeView.getRoot();
