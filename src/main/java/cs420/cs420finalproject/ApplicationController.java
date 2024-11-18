@@ -37,7 +37,7 @@ public class ApplicationController {
         for (CropGrowthData data : savedCropData) {
             cropDataMap.put(data.getFieldId(), data);
         }
-        TreeItem<String> root = loadItemsIntoTree();
+        loadItemsIntoTree();
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
@@ -102,9 +102,14 @@ public class ApplicationController {
         }
     }
 
-
-
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
+        // Store the drone and drone base before clearing
+        Circle existingDrone = animatedDrone;
+        Rectangle existingDroneBase = droneBase;
+
+        // Clear existing items from the visual pane (except drone and drone base)
+        dronePane.getChildren().removeIf(node -> !(node instanceof Circle || node instanceof Rectangle));
+
         // Iterate through the root's children (which now include items and containers)
         TreeItem<String> root = itemTreeView.getRoot();
         for (TreeItem<String> node : root.getChildren()) {
@@ -114,12 +119,40 @@ public class ApplicationController {
             double y = item.getY();
             loadItemNodeVisual(node, 0, x, y);
         }
+
+        // Re-add the drone and drone base to the pane if not already present
+        if (existingDrone != null && !dronePane.getChildren().contains(existingDrone)) {
+            dronePane.getChildren().add(existingDrone);
+        }
+        if (existingDroneBase != null && !dronePane.getChildren().contains(existingDroneBase)) {
+            dronePane.getChildren().add(existingDroneBase);
+        }
     }
 
     private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY) {
+        String itemType = node.getValue();
+
+        // Check if the item has already been added
+        if (addedItems.contains(itemType)) {
+            return; // Skip if already added
+        }
+
+        // Mark the item as added
+        addedItems.add(itemType);
+
         // Calculate size based on depth, where top-level containers are larger
         double sizeFactor = 1 + (0.2 * (3 - depth)); // Scale factor that decreases with depth
         double containerSize = 100 * sizeFactor;  // Adjust container size for depth
+
+        if (itemType.equalsIgnoreCase("drone")) {
+            // Handle drone creation
+            addDroneToPane(offsetX, offsetY);
+            return; // Return early since the drone is already added
+        } else if (itemType.equalsIgnoreCase("drone base")) {
+            // Handle drone base creation
+            addDroneBase();
+            return; // Return early since the drone base is already added
+        }
 
         // Check if the current node has children. If it does, it's a container.
         if (node.getChildren().isEmpty()) {
@@ -128,6 +161,11 @@ public class ApplicationController {
             itemRect.setLayoutX(offsetX);
             itemRect.setLayoutY(offsetY);
             dronePane.getChildren().add(itemRect);
+
+            // If it's a field, add it to the fieldItems list
+            if (itemType.equalsIgnoreCase("field")) {
+                fieldItems.add(itemRect); // Add field to the fieldItems list
+            }
 
             // Add buffer space for next item
             offsetY += 10;
@@ -212,16 +250,20 @@ public class ApplicationController {
             return;
         }
         statusLabel.setText("Collecting crop growth data...");
+
         // Initialize the drone animation
         DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
         String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+
         // Create transitions for moving the drone to each field and then back to the base
         List<SequentialTransition> transitions = new ArrayList<>();
+
         // Loop through field items and create a move transition for each field
         for (Rectangle field : fieldItems) {
             CropGrowthData cropData = findOrCreateCropData(field);
             cropData.increaseGrowthLevel();
             cropData.setTimestamp(timestamp);
+
             // Create the transition for moving the drone to the field
             SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
             moveToField.setOnFinished(event -> {
@@ -230,15 +272,24 @@ public class ApplicationController {
             });
             transitions.add(moveToField);
         }
+
         // Create the transition for the drone to return to the base
         SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
         returnToBase.setOnFinished(event -> {
             statusLabel.setText("System ready.");
         });
         transitions.add(returnToBase);
+
         // Combine all transitions and play them sequentially
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
+
+        // Debugging: confirm that all transitions are set
+        allTransitions.setOnFinished(event -> {
+            System.out.println("All transitions completed.");
+            statusLabel.setText("System ready.");
+        });
+
         allTransitions.play();
     }
 

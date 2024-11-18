@@ -47,10 +47,11 @@ public class Item {
 
         Item item = (Item) o;
 
+        // Perform case-insensitive comparison for name and type
         return Double.compare(item.x, x) == 0 && // Compare x coordinates
                 Double.compare(item.y, y) == 0 && // Compare y coordinates
-                name.equals(item.name) && // Compare names
-                type.equals(item.type); // Compare types
+                name.equalsIgnoreCase(item.name) && // Compare names (case-insensitive)
+                type.equalsIgnoreCase(item.type); // Compare types (case-insensitive)
     }
 
     @Override
