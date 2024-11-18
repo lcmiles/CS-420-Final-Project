@@ -47,56 +47,75 @@ public class ApplicationController {
     }
 
     private void loadItemsIntoTree() {
-        TreeItem<String> rootItem = new TreeItem<>("Items");
-        rootItem.setExpanded(true);
+        // Load all items from the database
+        List<Item> savedItems = DatabaseConnection.getItems();
+        Map<String, TreeItem<String>> itemTreeMap = new HashMap<>(); // Map to track TreeItems by item name
+        Map<String, Container> containerMap = new HashMap<>(); // Map to track containers by name
 
-        Set<Integer> addedItemsHashCodes = new HashSet<>();
-        List<Item> items = DatabaseConnection.getItems();  // Retrieve all items, including containers and contained items
+        // First pass: Create tree nodes for all items and containers
+        for (Item item : savedItems) {
+            TreeItem<String> itemNode = new TreeItem<>(item.getName());
+            itemTreeMap.put(item.getName(), itemNode); // Map the tree node to the item's name
 
-        // Phase 1: Process containers and their contained items
-        for (Item item : items) {
-            int itemHashCode = item.hashCode();  // Use the hashCode() to check for duplicates
+            // If the item is a container, track it
+            if (item instanceof Container) {
+                containerMap.put(item.getName(), (Container) item);
+            }
+        }
 
-            if (!addedItemsHashCodes.contains(itemHashCode)) {  // Only add items that haven't been added
-                if (item instanceof Container) {
-                    Container container = (Container) item;
-                    // Remove "(Container)" from label
-                    String itemLabel = item.getName();
-                    TreeItem<String> itemNode = new TreeItem<>(itemLabel);
-                    rootItem.getChildren().add(itemNode);
-                    addedItemsHashCodes.add(itemHashCode);
+        // Second pass: Link contained items and sub-containers
+        for (Container container : containerMap.values()) {
+            TreeItem<String> containerNode = itemTreeMap.get(container.getName());
 
-                    // Add contained items to the container node
-                    List<Item> containedItems = container.getContainedItems();
-                    for (Item containedItem : containedItems) {
-                        int containedItemHashCode = containedItem.hashCode();  // Ensure no duplicate contained items
-                        if (!addedItemsHashCodes.contains(containedItemHashCode)) {
-                            String containedItemLabel = containedItem.getName();  // Remove the label type here
-                            TreeItem<String> containedItemNode = new TreeItem<>(containedItemLabel);
-                            itemNode.getChildren().add(containedItemNode);
-                            addedItemsHashCodes.add(containedItemHashCode);
-                        }
-                    }
+            // Retrieve contained items for the container
+            List<Item> containedItems = container.getContainedItems(); // Lazily loaded from the database
+
+            // Add contained items as children of the container node
+            for (Item containedItem : containedItems) {
+                TreeItem<String> containedNode = itemTreeMap.get(containedItem.getName());
+                if (containedNode != null) {
+                    containerNode.getChildren().add(containedNode);
+                    System.out.println("Linked item " + containedItem.getName() + " to container " + container.getName());
                 }
             }
         }
 
-        // Phase 2: Process non-container items and add them to the root
-        for (Item item : items) {
-            int itemHashCode = item.hashCode();
+        // Build the root of the tree
+        TreeItem<String> root = new TreeItem<>("Items"); // Root node for the TreeView
 
-            if (!(item instanceof Container) && !addedItemsHashCodes.contains(itemHashCode)) {
-                // Non-container items (regular items) are added directly to the root
-                String itemLabel = item.getName();  // Remove the label type here
-                TreeItem<String> itemNode = new TreeItem<>(itemLabel);
-                rootItem.getChildren().add(itemNode);
-                addedItemsHashCodes.add(itemHashCode);
+        // Add top-level items (not contained in any container) to the root
+        for (TreeItem<String> node : itemTreeMap.values()) {
+            if (node.getParent() == null) { // Only add nodes that are not yet attached to a parent
+                root.getChildren().add(node);
             }
         }
 
-        // Set the root for the TreeView and define how cells should be displayed
-        itemTreeView.setRoot(rootItem);
-        itemTreeView.setCellFactory(param -> new TextFieldTreeCell<>());
+        // Set the root node to the TreeView
+        itemTreeView.setRoot(root);
+        System.out.println("Tree structure loaded successfully.");
+    }
+
+
+    // Recursively add contained items to a container's TreeItem
+    private void addContainedItemsToContainer(Container container, Map<String, TreeItem<String>> itemTreeMap) {
+        TreeItem<String> containerNode = itemTreeMap.get(container.getName());
+        if (containerNode != null) {
+            // Add contained items
+            for (Item containedItem : container.getContainedItems()) {
+                TreeItem<String> containedItemNode = itemTreeMap.get(containedItem.getName());
+                if (containedItemNode != null) {
+                    containerNode.getChildren().add(containedItemNode);
+                    System.out.println("Added contained item " + containedItem.getName() + " to container " + container.getName()); // Debug log
+                }
+            }
+
+            // Recursively add any nested containers
+            for (Item nestedItem : container.getContainedItems()) {
+                if (nestedItem instanceof Container) {
+                    addContainedItemsToContainer((Container) nestedItem, itemTreeMap);
+                }
+            }
+        }
     }
 
     @FXML public void addItemToPane() {

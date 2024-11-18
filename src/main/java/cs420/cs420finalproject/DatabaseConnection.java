@@ -57,16 +57,16 @@ public class DatabaseConnection {
     // Insert item into the database (no recursion needed now)
     public static void insertItem(Item item) {
         String sql = "INSERT INTO items (name, type, x, y) VALUES(?, ?, ?, ?)";
-            try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, item.getName());
-                pstmt.setString(2, item.getType());
-                pstmt.setDouble(3, item.getX());
-                pstmt.setDouble(4, item.getY());
-                pstmt.executeUpdate();
-                System.out.println("Item inserted: " + item.getName());
-            } catch (SQLException e) {
-                System.out.println(e.getMessage());
-            }
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, item.getName());
+            pstmt.setString(2, item.getType());
+            pstmt.setDouble(3, item.getX());
+            pstmt.setDouble(4, item.getY());
+            pstmt.executeUpdate();
+            System.out.println("Item inserted: " + item.getName());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
 
@@ -192,6 +192,57 @@ public class DatabaseConnection {
         return containedItems;
     }
 
+    // Get the container for a specific item
+    public static Container getContainerForItem(Item item) {
+        Container container = null;
+        String sql = "SELECT container_name FROM contained_items WHERE item_name = ?";
+
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, item.getName());
+            ResultSet rs = pstmt.executeQuery();
+
+            // If a container is found, fetch it from the database
+            if (rs.next()) {
+                String containerName = rs.getString("container_name");
+                container = getContainerByName(containerName);  // Method to get container by its name
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving container for item: " + e.getMessage());
+        }
+        return container;
+    }
+
+    // Helper method to get a container by its name
+    public static Container getContainerByName(String containerName) {
+        for (Item item : getItems()) {
+            if (item instanceof Container && item.getName().equals(containerName)) {
+                return (Container) item;
+            }
+        }
+        return null;
+    }
+
+    public static List<Item> getContainedItemsForContainer(Container container) {
+        List<Item> containedItems = new ArrayList<>();
+        String sql = "SELECT item_name FROM contained_items WHERE container_name = ?";
+
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, container.getName());
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String itemName = rs.getString("item_name");
+                Item item = getItemByName(itemName); // Fetch item details
+                if (item != null) {
+                    containedItems.add(item);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching contained items for container: " + e.getMessage());
+        }
+
+        return containedItems;
+    }
 
     // Initialize the database (tables creation)
     public static void initializeDatabase() {

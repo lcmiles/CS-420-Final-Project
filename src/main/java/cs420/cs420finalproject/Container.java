@@ -8,32 +8,41 @@ public class Container extends Item {
 
     public Container(String name, String type, double x, double y) {
         super(name, type, x, y);
-        containedItems = new ArrayList<>();
     }
 
     public void addItem(Item item) {
+        if (containedItems == null) {
+            containedItems = DatabaseConnection.getContainedItemsForContainer(this); // Lazy load items
+        }
         containedItems.add(item);
     }
 
     public List<Item> getContainedItems() {
+        if (containedItems == null) {
+            // Lazy load contained items from the database
+            containedItems = DatabaseConnection.getContainedItemsForContainer(this);
+        }
         return containedItems;
     }
 
     // New method to check if the container already contains an item
     public boolean containsItem(Item item) {
-        return containedItems.contains(item);
+        return getContainedItems().contains(item); // Ensure containedItems is loaded
     }
 
     @Override
     public void saveToDatabase() {
-        // Insert container into the database
+        // Save the container itself
         DatabaseConnection.insertItem(this);
 
-        // Insert contained items to the database as well
-        for (Item containedItem : containedItems) {
-            DatabaseConnection.insertItem(containedItem);
-            // You may also need to insert the relationship in a junction table, e.g., "contained_items"
-            // Example: DatabaseConnection.insertContainedItem(this, containedItem);
+        // Save the relationships between the container and its contained items
+        for (Item containedItem : getContainedItems()) {
+            if (containedItem instanceof Container) {
+                ((Container) containedItem).saveToDatabase(); // Recursively save sub-containers
+            } else {
+                containedItem.saveToDatabase();
+            }
+            DatabaseConnection.insertContainedItem(this, containedItem); // Insert the relationship
         }
     }
 }
