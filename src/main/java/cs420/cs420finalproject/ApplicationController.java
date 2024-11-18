@@ -32,13 +32,13 @@ public class ApplicationController {
     Set<String> addedItems = new HashSet<>(); // Set to track added items
 
     public void initialize() {
+        statusLabel.setText("System ready.");
         List<CropGrowthData> savedCropData = DatabaseConnection.getCropGrowthData();
         for (CropGrowthData data : savedCropData) {
             cropDataMap.put(data.getFieldId(), data);
         }
         loadItemsIntoTree();
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
-        statusLabel.setText("System ready.");
     }
 
     private TreeItem<String> loadItemsIntoTree() {
@@ -50,9 +50,6 @@ public class ApplicationController {
         for (Item item : savedItems) {
             TreeItem<String> itemNode = new TreeItem<>(item.getName());
             itemTreeMap.put(item.getName(), itemNode);
-
-            // Debug: Print item class type and order
-            System.out.println("Loading item: " + item.getName() + " | Class: " + item.getClass().getName());
 
             if (item instanceof Container) {
                 containerMap.put(item.getName(), (Container) item);
@@ -107,29 +104,44 @@ public class ApplicationController {
         Circle existingDrone = animatedDrone;
         Rectangle existingDroneBase = droneBase;
 
-        // Clear existing items from the visual pane (except drone, drone base, and status label)
-        dronePane.getChildren().removeIf(node -> !(node instanceof Circle || node instanceof Rectangle || node instanceof Label));
+        // Clear existing items from the visual pane (except drone and drone base)
+        dronePane.getChildren().clear();
+        System.out.println("Cleared all items from the pane.");
+
+        // Re-add the drone and drone base to the pane
+        if (existingDrone != null) {
+            dronePane.getChildren().add(existingDrone);
+            System.out.println("Re-added drone to the pane.");
+        }
+        if (existingDroneBase != null) {
+            dronePane.getChildren().add(existingDroneBase);
+            System.out.println("Re-added drone base to the pane.");
+        }
+
+        // Clear the set of added items to allow re-adding items
+        addedItems.clear();
 
         // Iterate through the root's children (which now include items and containers)
         TreeItem<String> root = itemTreeView.getRoot();
+        System.out.println("Loading items into visual pane...");
+
         for (TreeItem<String> node : root.getChildren()) {
+            // Debug print: show the current node being processed
+            System.out.println("Processing item: " + node.getValue());
+
             // For top-level node, use actual coordinates (e.g., from item data)
             Item item = DatabaseConnection.getItemByName(node.getValue());
+
+            // Debug print: show item information and coordinates
             double x = item.getX();
             double y = item.getY();
-            loadItemNodeVisual(node, 0, x, y);
-        }
+            System.out.println("Item found: " + item.getName() + " | Coordinates: (" + x + ", " + y + ")");
 
-        // Re-add the drone and drone base to the pane if not already present
-        if (existingDrone != null && !dronePane.getChildren().contains(existingDrone)) {
-            dronePane.getChildren().add(existingDrone);
-        }
-        if (existingDroneBase != null && !dronePane.getChildren().contains(existingDroneBase)) {
-            dronePane.getChildren().add(existingDroneBase);
+            loadItemNodeVisual(node, 0, x, y, containerMap);
         }
     }
 
-    private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY) {
+    private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
         String itemType = node.getValue();
 
         // Check if the item has already been added
@@ -162,9 +174,10 @@ public class ApplicationController {
             itemRect.setLayoutY(offsetY);
             dronePane.getChildren().add(itemRect);
 
-            // If it's a field, add it to the fieldItems list
+            // Set a higher view order for contained items (to appear above containers)
             if (itemType.equalsIgnoreCase("field")) {
-                fieldItems.add(itemRect); // Add field to the fieldItems list
+                itemRect.setViewOrder(1);  // Ensure fields appear above containers
+                fieldItems.add(itemRect);  // Add field to the fieldItems list
             }
 
             // Add buffer space for next item
@@ -177,14 +190,20 @@ public class ApplicationController {
             containerRect.setLayoutY(offsetY);
             dronePane.getChildren().add(containerRect);
 
+            // Set a lower view order for the container (so contained items appear above it)
+            containerRect.setViewOrder(0);
+
             // Recursively load contained items within the container
             double containedOffsetX = offsetX + 10;
             double containedOffsetY = offsetY + 10;
             for (TreeItem<String> child : node.getChildren()) {
-                loadItemNodeVisual(child, depth + 1, containedOffsetX, containedOffsetY);
+                loadItemNodeVisual(child, depth + 1, containedOffsetX, containedOffsetY, containerMap);
                 containedOffsetY += 10;  // Buffer space between contained items
             }
         }
+
+        // Debug print: show coordinates after loading items
+        System.out.println("Finished loading item: " + itemType + " at (" + offsetX + ", " + offsetY + ")");
     }
 
     @FXML public void addItemToPane() {

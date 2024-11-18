@@ -93,8 +93,10 @@ public class AddItemController {
 
         itemCreated = true;
         System.out.println("Item created: " + newItem);
+
         closePopup();
     }
+
 
     @FXML
     private void onContainerCheckBoxChanged() {
