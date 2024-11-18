@@ -102,34 +102,38 @@ public class ApplicationController {
     }
 
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
-
         // Store the drone and drone base before clearing
-        Circle existingDrone = animatedDrone;
-        Rectangle existingDroneBase = droneBase;
+        existingDrone = animatedDrone;
+        existingDroneBase = droneBase;
 
-        // Clear existing items from the visual pane (except drone, drone base, and status label)
-        dronePane.getChildren().removeIf(node -> !(node instanceof Circle || node instanceof Rectangle || node instanceof Label));
+        // Clear existing items from the visual pane (except drone and drone base)
+        dronePane.getChildren().clear();
 
-        // Iterate through the root's children (which now include items and containers)
-        TreeItem<String> root = itemTreeView.getRoot();
-        for (TreeItem<String> node : root.getChildren()) {
-            // For top-level node, use actual coordinates (e.g., from item data)
-            Item item = DatabaseConnection.getItemByName(node.getValue());
-            if (item != null) {
-                double x = item.getX();
-                double y = item.getY();
-                loadItemNodeVisual(node, 0, x, y, containerMap);
-            }
-        }
-
-        // Re-add the drone and drone base to the pane if not already present
-        if (existingDrone != null && !dronePane.getChildren().contains(existingDrone)) {
+        // Re-add the drone and drone base to the pane if they exist
+        if (existingDrone != null) {
             dronePane.getChildren().add(existingDrone);
         }
-        if (existingDroneBase != null && !dronePane.getChildren().contains(existingDroneBase)) {
+        if (existingDroneBase != null) {
             dronePane.getChildren().add(existingDroneBase);
         }
 
+        // Clear the set of added items to allow re-adding items
+        addedItems.clear();
+
+        // Iterate through the root's children (which now include items and containers)
+        TreeItem<String> root = itemTreeView.getRoot();
+
+        for (TreeItem<String> node : root.getChildren()) {
+            // Debug print: show the current node being processed
+
+            // For top-level node, use actual coordinates (e.g., from item data)
+            Item item = DatabaseConnection.getItemByName(node.getValue());
+
+            // Debug print: show item information and coordinates
+            double x = item.getX();
+            double y = item.getY();
+            loadItemNodeVisual(node, 0, x, y, containerMap);
+        }
     }
 
     private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
