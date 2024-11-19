@@ -26,7 +26,11 @@ public class ApplicationController {
     private Circle animatedDrone;
     private Rectangle droneBase;
     private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
+    private List<Rectangle> pastureItems = new ArrayList<>(); // List of pastures for the drone to visit
     private Map<String, CropGrowthData> cropDataMap = new HashMap<>(); // Mapping of crop data
+    private Map<String, SoilMoistureData> soilDataMap = new HashMap<>(); // Mapping of soil moisture data
+    private Map<String, LivestockFeedingData> livestockDataMap = new HashMap<>(); // Mapping of livestock feeding data
+    private Map<String, PestData> pestDataMap = new HashMap<>(); // Mapping of pest data
     @FXML private LineChart<String, Number> growthLineChart; // Reference to the growth line chart
     @FXML private TreeView<String> itemTreeView; // TreeView to display all items
     Set<String> addedItems = new HashSet<>(); // Set to track added items
@@ -48,15 +52,24 @@ public class ApplicationController {
         for (CropGrowthData data : savedCropData) {
             cropDataMap.put(data.getFieldId(), data);
         }
+        List<SoilMoistureData> savedSoilData = DatabaseConnection.getSoilMoistureData();
+        for (SoilMoistureData data : savedSoilData) {
+            soilDataMap.put(data.getFieldId(), data);
+        }
+        List<LivestockFeedingData> savedLivestockData = DatabaseConnection.getLivestockFeedingData();
+        for (LivestockFeedingData data : savedLivestockData) {
+            livestockDataMap.put(data.getPastureId(), data);
+        }
+        List<PestData> savedPestData = DatabaseConnection.getPestData();
+        for (PestData data : savedPestData) {
+            pestDataMap.put(data.getFieldId(), data);
+        }
         loadItemsIntoTree();
-
-        // Track selection changes in TreeView
         itemTreeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 handleItemSelection(newValue);
             }
         });
-
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
@@ -302,7 +315,12 @@ public class ApplicationController {
             // Set a higher view order for contained items (to appear above containers)
             if (itemType.equalsIgnoreCase("field")) {
                 itemRect.setViewOrder(1); // Ensure fields appear above containers
+                itemRect.setStyle("-fx-fill: green;");
                 fieldItems.add(itemRect); // Add field to the fieldItems list
+            } else if (itemType.equalsIgnoreCase("pasture")) {
+                itemRect.setViewOrder(1); // Ensure pastures appear above containers
+                itemRect.setStyle("-fx-fill: #d8cc49;"); // Light green for pastures
+                pastureItems.add(itemRect); // Add pasture to the pastureItems list
             }
 
             // Add buffer space for next item
@@ -316,6 +334,10 @@ public class ApplicationController {
             if (itemType.equalsIgnoreCase("field")) {
                 containerRect.setStyle("-fx-fill: green; -fx-stroke: black; -fx-stroke-width: 2;");
                 fieldItems.add(containerRect); // Add this container to the fieldItems list
+            } else if (itemType.equalsIgnoreCase("pasture")) {
+                // If this is a pasture, make it light green
+                containerRect.setStyle("-fx-fill: #d8cc49; -fx-stroke: black; -fx-stroke-width: 2;");
+                pastureItems.add(containerRect); // Add this container to the pastureItems list
             } else {
                 containerRect.setStyle("-fx-fill: lightgray; -fx-stroke: black; -fx-stroke-width: 2;");
             }
@@ -491,6 +513,57 @@ public class ApplicationController {
         }
     }
 
+    @FXML
+    public void onViewSoilMoistureChartButtonClicked() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("soilMoistureChartView.fxml"));
+            Parent root = fxmlLoader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Soil Moisture Chart");
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            SoilMoistureChartController chartController = fxmlLoader.getController();
+            stage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    public void onViewLivestockFeedingChartButtonClicked() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("livestockFeedingChartView.fxml"));
+            Parent root = fxmlLoader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Livestock Feeding Chart");
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            LivestockFeedingChartController chartController = fxmlLoader.getController();
+            stage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    public void onViewPestDataChartButtonClicked() {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("pestDataChartView.fxml"));
+            Parent root = fxmlLoader.load();
+            Stage stage = new Stage();
+            stage.setTitle("Pest Data Chart");
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.initModality(Modality.APPLICATION_MODAL);
+            PestDataChartController chartController = fxmlLoader.getController();
+            stage.showAndWait();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @FXML private void handleHarvestCrops() {
         String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
         for (Rectangle field : fieldItems) {
@@ -504,4 +577,174 @@ public class ApplicationController {
             }
         }
     }
+
+    @FXML private void onSoilMoistureCollect() {
+        if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
+            statusLabel.setText("Add a drone, base, and fields first.");
+            return;
+        }
+        statusLabel.setText("Collecting soil moisture data...");
+
+        DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+
+        List<SequentialTransition> transitions = new ArrayList<>();
+
+        for (Rectangle field : fieldItems) {
+            SoilMoistureData soilData = findOrCreateSoilMoistureData(field);
+            soilData.decreaseMoistureLevel();  // Decrease moisture between 0-3
+            soilData.setTimestamp(timestamp);
+
+            SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
+            moveToField.setOnFinished(event -> {
+                DatabaseConnection.insertSoilMoistureData(soilData);
+            });
+            transitions.add(moveToField);
+        }
+
+        SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
+        returnToBase.setOnFinished(event -> {
+            statusLabel.setText("System ready.");
+        });
+        transitions.add(returnToBase);
+
+        SequentialTransition allTransitions = new SequentialTransition();
+        allTransitions.getChildren().addAll(transitions);
+        allTransitions.play();
+    }
+
+    private SoilMoistureData findOrCreateSoilMoistureData(Rectangle field) {
+        String fieldId = "Field " + fieldItems.indexOf(field);
+        if (soilDataMap.containsKey(fieldId)) {
+            return soilDataMap.get(fieldId);
+        }
+        SoilMoistureData newData = new SoilMoistureData(
+                new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date()),
+                fieldId,
+                10 // Initial moisture level
+        );
+        soilDataMap.put(fieldId, newData);
+        return newData;
+    }
+
+    @FXML private void onWaterCrops() {
+        for (SoilMoistureData data : soilDataMap.values()) {
+            data.setMoistureLevel(10);  // Reset moisture level to 10
+            DatabaseConnection.insertSoilMoistureData(data);  // Update database
+        }
+    }
+
+    @FXML private void onLivestockFeedingCollect() {
+        if (animatedDrone == null || droneBase == null || pastureItems.isEmpty()) {  // Check pastureItems
+            statusLabel.setText("Add a drone, base, and pastures first.");
+            return;
+        }
+        statusLabel.setText("Collecting livestock feeding data...");
+
+        DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+
+        List<SequentialTransition> transitions = new ArrayList<>();
+
+        // Iterate over pastureItems instead of fieldItems
+        for (Rectangle pasture : pastureItems) {
+            LivestockFeedingData feedingData = findOrCreateLivestockFeedingData(pasture);
+            feedingData.decreaseFeedingLevel();  // Decrease feeding level between 0-3
+            feedingData.setTimestamp(timestamp);
+
+            SequentialTransition moveToPasture = droneAnim.moveDrone(pasture.getLayoutX(), pasture.getLayoutY());
+            moveToPasture.setOnFinished(event -> {
+                DatabaseConnection.insertLivestockFeedingData(feedingData);
+            });
+            transitions.add(moveToPasture);
+        }
+
+        SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
+        returnToBase.setOnFinished(event -> {
+            statusLabel.setText("System ready.");
+        });
+        transitions.add(returnToBase);
+
+        SequentialTransition allTransitions = new SequentialTransition();
+        allTransitions.getChildren().addAll(transitions);
+        allTransitions.play();
+    }
+
+    private LivestockFeedingData findOrCreateLivestockFeedingData(Rectangle pasture) {
+        String pastureId = "Pasture " + pastureItems.indexOf(pasture);  // Update to pastureItems list
+        if (livestockDataMap.containsKey(pastureId)) {
+            return livestockDataMap.get(pastureId);
+        }
+        LivestockFeedingData newData = new LivestockFeedingData(
+                new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date()),
+                pastureId,
+                10 // Initial feeding level
+        );
+        livestockDataMap.put(pastureId, newData);
+        return newData;
+    }
+
+    @FXML private void onFeedLivestock() {
+        for (LivestockFeedingData data : livestockDataMap.values()) {
+            data.setFeedingLevel(10);  // Reset feeding level to 10
+            DatabaseConnection.insertLivestockFeedingData(data);  // Update database
+        }
+    }
+
+    @FXML private void onPestDataCollect() {
+        if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
+            statusLabel.setText("Add a drone, base, and fields first.");
+            return;
+        }
+        statusLabel.setText("Collecting pest data...");
+
+        DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+
+        List<SequentialTransition> transitions = new ArrayList<>();
+
+        for (Rectangle field : fieldItems) {
+            PestData pestData = findOrCreatePestData(field);
+            pestData.increasePestLevel();  // Increase pest level between 0-3
+            pestData.setTimestamp(timestamp);
+
+            SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
+            moveToField.setOnFinished(event -> {
+                DatabaseConnection.insertPestData(pestData);
+            });
+            transitions.add(moveToField);
+        }
+
+        SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
+        returnToBase.setOnFinished(event -> {
+            statusLabel.setText("System ready.");
+        });
+        transitions.add(returnToBase);
+
+        SequentialTransition allTransitions = new SequentialTransition();
+        allTransitions.getChildren().addAll(transitions);
+        allTransitions.play();
+    }
+
+    private PestData findOrCreatePestData(Rectangle field) {
+        String fieldId = "Field " + fieldItems.indexOf(field);
+        if (pestDataMap.containsKey(fieldId)) {
+            return pestDataMap.get(fieldId);
+        }
+        PestData newData = new PestData(
+                new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date()),
+                fieldId,
+                0 // Initial pest level
+        );
+        pestDataMap.put(fieldId, newData);
+        return newData;
+    }
+
+    @FXML private void onSprayPesticide() {
+        for (PestData data : pestDataMap.values()) {
+            data.setPestLevel(0);  // Reset pest level to 0
+            DatabaseConnection.insertPestData(data);  // Update database
+        }
+    }
+
 }
