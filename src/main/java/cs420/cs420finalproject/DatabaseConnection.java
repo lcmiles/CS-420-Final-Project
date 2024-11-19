@@ -78,19 +78,16 @@ public class DatabaseConnection {
             pstmt.setDouble(3, item.getY());
             pstmt.setString(4, item.getName());
             pstmt.executeUpdate();
-            System.out.println("Item updated: " + item.getName());
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
 
-    // Delete an item from the database
     public static void deleteItem(String itemName) {
         String sql = "DELETE FROM items WHERE name = ?";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, itemName);
+            pstmt.setString(1, itemName);  // Make sure to pass the item name
             pstmt.executeUpdate();
-            System.out.println("Item deleted: " + itemName);
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }

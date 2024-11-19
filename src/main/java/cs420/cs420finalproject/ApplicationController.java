@@ -133,11 +133,20 @@ public class ApplicationController {
     @FXML private void handleDeleteItem() {
         TreeItem<String> selectedItem = itemTreeView.getSelectionModel().getSelectedItem();
         if (selectedItem != null) {
+            System.out.println("Attempting to delete item: " + selectedItem.getValue()); // Debugging print
+
             // Get item data from database
             Item itemToDelete = DatabaseConnection.getItemByName(selectedItem.getValue());
 
-            // Delete from database
-            DatabaseConnection.deleteItem(String.valueOf(itemToDelete));
+            // Debugging: Print item details
+            if (itemToDelete != null) {
+                System.out.println("Item found for deletion: " + itemToDelete.getName() + " of type " + itemToDelete.getType());
+
+                // Delete from database using the item name or ID
+                DatabaseConnection.deleteItem(itemToDelete.getName());  // Use item name to delete
+            } else {
+                System.out.println("No item found for deletion.");
+            }
 
             // Remove from TreeView
             itemTreeView.getRoot().getChildren().remove(selectedItem);
@@ -145,21 +154,32 @@ public class ApplicationController {
             // Optionally reload the visual representation
             loadItemsIntoVisualPane(new HashMap<>());
 
-            statusLabel.setText("Item deleted successfully.");
+            System.out.println("Item deleted successfully.");
+        } else {
+            System.out.println("No item selected for deletion.");
         }
     }
+
 
     @FXML
     private void handleEditItem() {
         // Get the selected item from the TreeView
         TreeItem<String> selectedItem = itemTreeView.getSelectionModel().getSelectedItem();
         if (selectedItem != null) {
+
             // Retrieve item data from the database based on the selected item name
             Item selectedItemData = DatabaseConnection.getItemByName(selectedItem.getValue());
 
+            // Debugging: Print item details
+            if (selectedItemData != null) {
+                //System.out.println("Item found for editing: " + selectedItemData.getName() + " of type " + selectedItemData.getType());
+            } else {
+                System.out.println("No item found for editing.");
+            }
+
             // If item data is not found, display a message
             if (selectedItemData == null) {
-                statusLabel.setText("Item not found.");
+                System.out.println("Item not found.");
                 return;
             }
 
@@ -190,16 +210,14 @@ public class ApplicationController {
                     // Refresh the TreeView and visual representation of the items
                     loadItemsIntoTree();
                     loadItemsIntoVisualPane(new HashMap<>());
-
-                    statusLabel.setText("Item updated successfully.");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
-                statusLabel.setText("Error opening edit item view.");
+                System.out.println("Error opening edit item view.");
             }
         } else {
             // If no item is selected in the TreeView, show a message
-            statusLabel.setText("No item selected to edit.");
+            System.out.println("No item selected to edit."); // Debugging print
         }
     }
 
@@ -238,7 +256,6 @@ public class ApplicationController {
 
         String itemName = node.getValue();
         String itemType = DatabaseConnection.getItemByName(itemName).getType();
-        System.out.println(itemType);
 
         // Check if the item has already been added
         if (addedItems.contains(itemName)) {

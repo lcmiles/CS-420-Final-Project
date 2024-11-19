@@ -4,6 +4,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 
 public class EditItemController {
 
@@ -21,22 +22,21 @@ public class EditItemController {
 
     @FXML
     private void onSaveChanges() {
+
         if (selectedItem == null) {
-            // Optionally, alert the user that no item is selected.
-            System.out.println("No item selected for update");
-            return;
+            System.out.println("Error: No item selected for update.");
+            return; // Exit if no item selected
         }
 
         // Collect updated data and save to the database
+        System.out.println("Saving changes for item: " + selectedItem.getName());
         selectedItem.setName(itemNameField.getText());
         selectedItem.setType(itemTypeField.getText());
         selectedItem.setX(Double.parseDouble(xField.getText()));
         selectedItem.setY(Double.parseDouble(yField.getText()));
 
         if (containerCheckBox.isSelected()) {
-            // Make sure selectedItem is a container if needed
             if (!(selectedItem instanceof Container)) {
-                // Create a new container using the properties of selectedItem
                 selectedItem = new Container(
                         selectedItem.getName(),
                         selectedItem.getType(),
@@ -51,12 +51,25 @@ public class EditItemController {
 
         updatedItem = selectedItem;  // Update the updatedItem variable
         itemCreated = true;  // Mark the item as created/modified
-
-        // Close the window or do any other post-save actions
+        closePopup();
     }
+
+    public void prefillFields(Item item) {
+        selectedItem = item;  // Ensure selectedItem is set here
+
+        itemNameField.setText(item.getName());
+        itemTypeField.setText(item.getType());
+        xField.setText(String.valueOf(item.getX()));
+        yField.setText(String.valueOf(item.getY()));
+        containerCheckBox.setSelected(item instanceof Container);
+
+    }
+
 
     @FXML
     private void onContainerCheckBoxChanged() {
+        System.out.println("onContainerCheckBoxChanged called");
+
         // Handle the checkbox change event
         if (containerCheckBox.isSelected()) {
             // Enable the ListView or make any other necessary changes
@@ -67,31 +80,21 @@ public class EditItemController {
         }
     }
 
-
-    // Method to prefill fields with data
-    public void prefillFields(Item item) {
-        itemNameField.setText(item.getName());
-        itemTypeField.setText(item.getType());
-        xField.setText(String.valueOf(item.getX()));
-        yField.setText(String.valueOf(item.getY()));
-        containerCheckBox.setSelected(item instanceof Container);
-        // Optionally, handle ListView or any other components related to containers
-    }
-
     public Item getUpdatedItem() {
         return updatedItem;
-    }
-
-    public boolean isItemCreated() {
-        return itemCreated;
     }
 
     public boolean isItemUpdated() {
         return updatedItem != null;  // Checks if an updated item exists
     }
 
+    private void closePopup() {
+        Stage stage = (Stage) itemTypeField.getScene().getWindow();
+        stage.close();
+    }
+
     @FXML
     private void onCancel() {
-        // Handle cancellation, e.g., close the window
+        closePopup();
     }
 }
