@@ -57,23 +57,26 @@ public class EditItemController {
                 DatabaseConnection.insertContainedItem(container, selectedContainedItem);
             }
         } else {
-            // Remove container functionality if checkbox is unchecked
-            if (selectedItem instanceof Container) {
-                Container container = (Container) selectedItem;
-
-                // Remove all contained items from the database
-                for (Item containedItem : container.getContainedItems()) {
-                    DatabaseConnection.removeContainedItem(container.getName(), containedItem.getName());
+            // Check if the item is in the contained_items table before attempting to remove it
+            List<Item> containedItems = DatabaseConnection.getContainedItemsForContainer(selectedItem);
+            for (Item containedItem : containedItems) {
+                if (containedItem.getName().equals(selectedItem.getName())) {
+                    // Remove the item from contained_items if it's found
+                    DatabaseConnection.removeContainedItem(selectedItem.getName(), containedItem.getName());
+                    break;
                 }
-
-                // Replace the container with a regular item
-                selectedItem = new Item(
-                        container.getName(),
-                        container.getType(),
-                        container.getX(),
-                        container.getY()
-                );
             }
+
+            // Replace the container with a regular item
+            selectedItem = new Item(
+                    selectedItem.getName(),
+                    selectedItem.getType(),
+                    selectedItem.getX(),
+                    selectedItem.getY()
+            );
+
+            // Ensure that the item no longer has any contained items
+            DatabaseConnection.deleteContainedItemsRelationships(selectedItem.getName());
         }
 
         // Update the item in the database

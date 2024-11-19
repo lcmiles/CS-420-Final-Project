@@ -268,23 +268,27 @@ public class DatabaseConnection {
         return null;
     }
 
-    public static List<Item> getContainedItemsForContainer(Container container) {
+    public static List<Item> getContainedItemsForContainer(Item item) {
         List<Item> containedItems = new ArrayList<>();
-        String sql = "SELECT item_name FROM contained_items WHERE container_name = ?";
 
-        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, container.getName());
-            ResultSet rs = pstmt.executeQuery();
+        // Only proceed if the item is a container
+        if (item instanceof Container) {
+            String sql = "SELECT item_name FROM contained_items WHERE container_name = ?";
 
-            while (rs.next()) {
-                String itemName = rs.getString("item_name");
-                Item item = getItemByName(itemName); // Fetch item details
-                if (item != null) {
-                    containedItems.add(item);
+            try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, item.getName());
+                ResultSet rs = pstmt.executeQuery();
+
+                while (rs.next()) {
+                    String itemName = rs.getString("item_name");
+                    Item containedItem = getItemByName(itemName); // Fetch item details
+                    if (containedItem != null) {
+                        containedItems.add(containedItem);
+                    }
                 }
+            } catch (SQLException e) {
+                System.err.println("Error fetching contained items for container: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.err.println("Error fetching contained items for container: " + e.getMessage());
         }
 
         return containedItems;
