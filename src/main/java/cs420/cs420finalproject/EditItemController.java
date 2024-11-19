@@ -23,6 +23,7 @@ public class EditItemController {
     private ListView<Item> itemListView;
 
     private Item selectedItem;
+    private Item itemBeingEdited;
     private Item updatedItem;
 
     @FXML
@@ -82,7 +83,13 @@ public class EditItemController {
     }
 
     public void prefillFields(Item item) {
+        if (item == null) {
+            System.out.println("Error: The item to be edited is null.");
+            return;
+        }
+
         selectedItem = item;
+        itemBeingEdited = item;
 
         // Prefill basic fields
         itemNameField.setText(item.getName());
@@ -111,9 +118,8 @@ public class EditItemController {
                 }
             });
 
-            // Retrieve all available items
-            List<Item> allItems = DatabaseConnection.getItems();
-            itemListView.getItems().addAll(allItems);
+            // Now, call loadItemsIntoListView to populate the ListView
+            loadItemsIntoListView();
 
             // Retrieve the container instance from the database
             Container container = DatabaseConnection.getContainerByName(item.getName());
@@ -145,29 +151,43 @@ public class EditItemController {
         }
     }
 
-    private void loadItemsIntoListView() {
-        itemListView.getItems().clear();
+    public void loadItemsIntoListView() {
+        itemListView.getItems().clear(); // Clear current items
+
+        if (itemBeingEdited == null) {
+            System.out.println("Error: itemBeingEdited is null.");
+            return;  // Exit early if itemBeingEdited is null
+        }
 
         List<Item> allItems = DatabaseConnection.getItems();
         List<Item> containedItems = DatabaseConnection.getContainedItems();
 
         List<Item> availableItems = new ArrayList<>();
+
+        // Iterate through all items to determine which ones should be available
         for (Item item : allItems) {
-            boolean alreadyContained = false;
-            for (Item containedItem : containedItems) {
-                if (item.hashCode() == containedItem.hashCode()) {
-                    alreadyContained = true;
-                    break;
-                }
+            // Skip the item that is currently being edited (itemBeingEdited)
+            if (item.equals(itemBeingEdited) || item.getName().equals(itemBeingEdited.getName())) {
+                continue;  // Skip items that have the same name or are the same item
             }
-            if (!alreadyContained || (selectedItem instanceof Container &&
-                    ((Container) selectedItem).getContainedItems().contains(item))) {
+
+            // Check if the item is already contained in the selected item (container)
+            boolean isContained = containedItems.stream()
+                    .anyMatch(containedItem -> containedItem.equals(item));
+
+            // If the item is not already contained, add it to the available list
+            if (!isContained) {
                 availableItems.add(item);
             }
         }
 
+        // Update the ListView with available items
         itemListView.getItems().addAll(availableItems);
         itemListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+    }
+
+    public void setItemBeingEdited(Item item) {
+        this.itemBeingEdited = item;
     }
 
     public Item getUpdatedItem() {

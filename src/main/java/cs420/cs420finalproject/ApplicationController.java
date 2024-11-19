@@ -164,9 +164,6 @@ public class ApplicationController {
         }
     }
 
-
-
-
     @FXML
     private void handleEditItem() {
         // Get the selected item from the TreeView
@@ -198,6 +195,9 @@ public class ApplicationController {
                 // Prefill the fields in the EditItemController with the selected item's data
                 controller.prefillFields(selectedItemData);
 
+                // Pass the item being edited to the controller to ensure it doesn't show up in the ListView
+                controller.setItemBeingEdited(selectedItemData);
+
                 // Create and show the modal window
                 Stage stage = new Stage();
                 stage.setTitle("Edit Item");
@@ -226,7 +226,6 @@ public class ApplicationController {
             System.out.println("No item selected to edit."); // Debugging print
         }
     }
-
 
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
         // Clear previous visual representations but retain drone, base, and labels
