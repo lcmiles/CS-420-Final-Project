@@ -298,7 +298,12 @@ public class ApplicationController {
         double sizeFactor = 1 + (0.2 * (3 - depth)); // Scale factor that decreases with depth
         double containerSize = 100 * sizeFactor; // Adjust container size for depth
 
-        // Skip drone and drone base creation here, as they are handled separately
+        // Ensure that top-level containers are larger than inner containers
+        if (depth == 0) {
+            containerSize *= 1.5; // Increase size for the outermost container
+        }
+
+// Skip drone and drone base creation here, as they are handled separately
         if (itemType.equalsIgnoreCase("drone")) {
             if (existingDrone == null) {
                 addDroneToPane(offsetX, offsetY);
@@ -306,7 +311,7 @@ public class ApplicationController {
             return; // Return early since the drone is already added
         } else if (itemType.equalsIgnoreCase("drone base")) {
             if (existingDroneBase == null) {
-                addDroneBase(offsetX, offsetY);
+                addDroneBase(offsetX,offsetY,itemName);
             }
             return; // Return early since the drone base is already added
         }
@@ -320,11 +325,14 @@ public class ApplicationController {
             itemRect.setId(itemType); // Assign the itemType as the ID for uniqueness
             dronePane.getChildren().add(itemRect);
 
-            // Add label under the item
+            // Add label immediately beneath the item
             Label itemLabel = new Label(itemName + " (" + itemType + ")");
             itemLabel.setLayoutX(offsetX);
-            itemLabel.setLayoutY(offsetY + itemRect.getHeight() + 5); // Position below the item
+            itemLabel.setLayoutY(offsetY + itemRect.getHeight()); // Position directly below the item
             dronePane.getChildren().add(itemLabel);
+
+            // Send the label to the front
+            itemLabel.toFront();
 
             // Set a higher view order for contained items (to appear above containers)
             if (itemType.equalsIgnoreCase("field")) {
@@ -338,7 +346,7 @@ public class ApplicationController {
             }
 
             // Add buffer space for next item
-            offsetY += 10;
+            offsetY += itemRect.getHeight() + 15; // Add space based on item height
         } else {
             // Load the container as a rectangle with adjusted size based on depth
             Rectangle containerRect = new Rectangle(containerSize, containerSize); // Size adjusted for depth
@@ -360,22 +368,34 @@ public class ApplicationController {
             containerRect.setLayoutY(offsetY);
             dronePane.getChildren().add(containerRect);
 
-            // Add label under the container
+            // Add label immediately beneath the container
             Label containerLabel = new Label(itemName + " (" + itemType + ")");
             containerLabel.setLayoutX(offsetX);
-            containerLabel.setLayoutY(offsetY + containerRect.getHeight() + 5); // Position below the container
             dronePane.getChildren().add(containerLabel);
+
+            // Send the label to the front
+            containerLabel.toFront();
 
             // Set a lower view order for the container (so contained items appear above it)
             containerRect.setViewOrder(0);
+
+            // Track the container's height as we add items
+            double containerHeight = containerSize;
 
             // Recursively load contained items within the container
             double containedOffsetX = offsetX + 10;
             double containedOffsetY = offsetY + 10;
             for (TreeItem<String> child : node.getChildren()) {
                 loadItemNodeVisual(child, depth + 1, containedOffsetX, containedOffsetY, containerMap);
-                containedOffsetY += 10; // Buffer space between contained items
+                containedOffsetY += 15 + 50; // Adjusted buffer space between contained items (height + 20)
+
+                // Increase the container height by 50 pixels for each contained item
+                containerHeight += 15; // Increase height for each item
             }
+
+            // Update the container's height after all contained items are loaded
+            containerRect.setHeight(containerHeight + 20);
+            containerLabel.setLayoutY(offsetY + containerRect.getHeight()); // Position directly below the container
         }
     }
 
@@ -449,23 +469,42 @@ public class ApplicationController {
         }
     }
 
-    private void addDroneBase(double x, double y) {
-        // Remove the existing drone base and its label if they exist
-        removeExistingVisual("Drone Base");
+    private void addDroneBase(double x, double y,String name) {
+        if (droneBase == null) {
 
-        // Add a visual drone base like any other item
-        Rectangle baseRect = new Rectangle(50, 50);
-        baseRect.setLayoutX(x);
-        baseRect.setLayoutY(y);
-        baseRect.setStyle("-fx-fill: #333333; -fx-stroke: black; -fx-stroke-width: 2;");
-        dronePane.getChildren().add(baseRect);
+            removeExistingVisual(name);
 
-        // Label the drone base
-        Label baseLabel = new Label("Drone Base");
-        baseLabel.setLayoutX(x);
-        baseLabel.setLayoutY(y + baseRect.getHeight() + 5); // Position below the rectangle
-        dronePane.getChildren().add(baseLabel);
+            droneBase = new Rectangle(50, 50);
+            droneBase.setLayoutX(x);
+            droneBase.setLayoutY(y);
+            droneBase.setStyle("-fx-fill: #333333; -fx-stroke: black; -fx-stroke-width: 2;");
+            dronePane.getChildren().add(droneBase);
+
+            // Label the drone base
+            Label baseLabel = new Label("Drone Base");
+            baseLabel.setLayoutX(x);
+            baseLabel.setLayoutY(y + droneBase.getHeight() + 5); // Position below the rectangle
+            dronePane.getChildren().add(baseLabel);
+        }
     }
+
+
+//    private void addDroneBase() {
+//        // Add a visual drone base like any other item
+//        if (droneBase == null) {
+//            Rectangle droneBase = new Rectangle(50, 50);
+//            droneBase.setLayoutX(x);
+//            droneBase.setLayoutY(y);
+//            droneBase.setStyle("-fx-fill: #333333; -fx-stroke: black; -fx-stroke-width: 2;");
+//            dronePane.getChildren().add(droneBase);
+//
+//            // Label the drone base
+//            Label baseLabel = new Label("Drone Base");
+//            baseLabel.setLayoutX(x);
+//            baseLabel.setLayoutY(y + droneBase.getHeight() + 5); // Position below the rectangle
+//            dronePane.getChildren().add(baseLabel);
+//        }
+//    }
 
     @FXML
     private void onCropDataCollect() {
