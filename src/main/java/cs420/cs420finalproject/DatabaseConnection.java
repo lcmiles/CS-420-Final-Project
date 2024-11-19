@@ -48,7 +48,7 @@ public class DatabaseConnection {
             pstmt.setInt(2, cropData.getGrowthLevel());
             pstmt.setString(3, cropData.getFieldId());
             pstmt.executeUpdate();
-            System.out.println("Data inserted: " + cropData.getTimestamp() + ", Growth Level: " + cropData.getGrowthLevel() + ", Field: " + cropData.getFieldId());
+            System.out.println("Crop growth data inserted: " + cropData.getTimestamp() + ", Growth Level: " + cropData.getGrowthLevel() + ", Field: " + cropData.getFieldId());
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -62,7 +62,7 @@ public class DatabaseConnection {
             pstmt.setInt(2, soilData.getMoistureLevel());
             pstmt.setString(3, soilData.getFieldId());
             pstmt.executeUpdate();
-            System.out.println("Soil moisture data inserted: " + soilData.getTimestamp() + ", Moisture Level: " + soilData.getMoistureLevel());
+            System.out.println("Soil moisture data inserted: " + soilData.getTimestamp() + ", Moisture Level: " + soilData.getMoistureLevel() + ", Field: " + soilData.getFieldId());
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -94,7 +94,7 @@ public class DatabaseConnection {
             pstmt.setInt(2, livestockData.getFeedingLevel());
             pstmt.setString(3, livestockData.getPastureId());
             pstmt.executeUpdate();
-            System.out.println("Livestock feeding data inserted: " + livestockData.getTimestamp() + ", Feeding Level: " + livestockData.getFeedingLevel());
+            System.out.println("Livestock feeding data inserted: " + livestockData.getTimestamp() + ", Feeding Level: " + livestockData.getFeedingLevel()  + ", Pasture: " + livestockData.getPastureId());
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
@@ -126,7 +126,7 @@ public class DatabaseConnection {
             pstmt.setInt(2, pestData.getPestLevel());
             pstmt.setString(3, pestData.getFieldId());
             pstmt.executeUpdate();
-            System.out.println("Pest data inserted: " + pestData.getTimestamp() + ", Pest Level: " + pestData.getPestLevel());
+            System.out.println("Pest data inserted: " + pestData.getTimestamp() + ", Pest Level: " + pestData.getPestLevel()  + ", Field: " + pestData.getFieldId());
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }

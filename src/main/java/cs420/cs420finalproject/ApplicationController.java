@@ -169,6 +169,9 @@ public class ApplicationController {
             // Remove from TreeView
             itemTreeView.getRoot().getChildren().remove(selectedItem);
 
+            // Optionally remove from visual pane as well (call removeExistingVisual to remove both the rectangle and label)
+            removeExistingVisual(itemToDelete);
+
             // Refresh TreeView
             loadItemsIntoTree();  // Reload tree to reflect changes
 
@@ -180,6 +183,7 @@ public class ApplicationController {
             System.out.println("No item selected for deletion.");
         }
     }
+
 
     @FXML
     private void handleEditItem() {
@@ -302,7 +306,7 @@ public class ApplicationController {
             return; // Return early since the drone is already added
         } else if (itemType.equalsIgnoreCase("drone base")) {
             if (existingDroneBase == null) {
-                addDroneBase();
+                addDroneBase(offsetX, offsetY);
             }
             return; // Return early since the drone base is already added
         }
@@ -315,6 +319,12 @@ public class ApplicationController {
             itemRect.setLayoutY(offsetY);
             itemRect.setId(itemType); // Assign the itemType as the ID for uniqueness
             dronePane.getChildren().add(itemRect);
+
+            // Add label under the item
+            Label itemLabel = new Label(itemName + " (" + itemType + ")");
+            itemLabel.setLayoutX(offsetX);
+            itemLabel.setLayoutY(offsetY + itemRect.getHeight() + 5); // Position below the item
+            dronePane.getChildren().add(itemLabel);
 
             // Set a higher view order for contained items (to appear above containers)
             if (itemType.equalsIgnoreCase("field")) {
@@ -350,6 +360,12 @@ public class ApplicationController {
             containerRect.setLayoutY(offsetY);
             dronePane.getChildren().add(containerRect);
 
+            // Add label under the container
+            Label containerLabel = new Label(itemName + " (" + itemType + ")");
+            containerLabel.setLayoutX(offsetX);
+            containerLabel.setLayoutY(offsetY + containerRect.getHeight() + 5); // Position below the container
+            dronePane.getChildren().add(containerLabel);
+
             // Set a lower view order for the container (so contained items appear above it)
             containerRect.setViewOrder(0);
 
@@ -364,11 +380,14 @@ public class ApplicationController {
     }
 
     private void removeExistingVisual(String itemName) {
-        // Remove from the dronePane if it exists
+        // Remove from the dronePane if it exists (both rectangles and labels)
         dronePane.getChildren().removeIf(node -> {
             if (node instanceof Rectangle) {
                 Rectangle rect = (Rectangle) node;
                 return rect.getId() != null && rect.getId().equals(itemName);
+            } else if (node instanceof Label) {
+                Label label = (Label) node;
+                return label.getText().contains(itemName);  // Match label by text
             }
             return false;
         });
@@ -430,14 +449,22 @@ public class ApplicationController {
         }
     }
 
-    private void addDroneBase() {
-        if (droneBase == null) {
-            droneBase = new Rectangle(50, 50);
-            droneBase.setLayoutX(350);
-            droneBase.setLayoutY(350);
-            droneBase.setStyle("-fx-fill: brown;");
-            dronePane.getChildren().add(droneBase);
-        }
+    private void addDroneBase(double x, double y) {
+        // Remove the existing drone base and its label if they exist
+        removeExistingVisual("Drone Base");
+
+        // Add a visual drone base like any other item
+        Rectangle baseRect = new Rectangle(50, 50);
+        baseRect.setLayoutX(x);
+        baseRect.setLayoutY(y);
+        baseRect.setStyle("-fx-fill: #333333; -fx-stroke: black; -fx-stroke-width: 2;");
+        dronePane.getChildren().add(baseRect);
+
+        // Label the drone base
+        Label baseLabel = new Label("Drone Base");
+        baseLabel.setLayoutX(x);
+        baseLabel.setLayoutY(y + baseRect.getHeight() + 5); // Position below the rectangle
+        dronePane.getChildren().add(baseLabel);
     }
 
     @FXML
@@ -483,7 +510,6 @@ public class ApplicationController {
         // Start all transitions
         allTransitions.setOnFinished(event -> {
             // This will ensure that the function only completes after all transitions are finished
-            System.out.println("Data collection complete.");
         });
 
         // Play the transition
@@ -641,10 +667,26 @@ public class ApplicationController {
         return newData;
     }
 
-    @FXML private void onWaterCrops() {
+    @FXML
+    private void onWaterCrops() {
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+        boolean watered = false;
+
         for (SoilMoistureData data : soilDataMap.values()) {
-            data.setMoistureLevel(10);  // Reset moisture level to 10
-            DatabaseConnection.insertSoilMoistureData(data);  // Update database
+            if (data.getMoistureLevel() < 10) { // Only water if moisture is not at max
+                data.setMoistureLevel(10);  // Reset moisture level to 10
+                data.setTimestamp(timestamp); // Update timestamp
+                DatabaseConnection.insertSoilMoistureData(data);  // Update database
+                watered = true;
+            }
+        }
+
+        if (watered) {
+            System.out.println("Crops watered.");
+            statusLabel.setText("Crops watered. System ready.");
+        } else {
+            System.out.println("Crops are already at maximum moisture.");
+            statusLabel.setText("No watering needed. System ready.");
         }
     }
 
@@ -704,10 +746,26 @@ public class ApplicationController {
         return newData;
     }
 
-    @FXML private void onFeedLivestock() {
+    @FXML
+    private void onFeedLivestock() {
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+        boolean fed = false;
+
         for (LivestockFeedingData data : livestockDataMap.values()) {
-            data.setFeedingLevel(10);  // Reset feeding level to 10
-            DatabaseConnection.insertLivestockFeedingData(data);  // Update database
+            if (data.getFeedingLevel() < 10) { // Only feed if feeding level is not at max
+                data.setFeedingLevel(10);  // Reset feeding level to 10
+                data.setTimestamp(timestamp); // Update timestamp
+                DatabaseConnection.insertLivestockFeedingData(data);  // Update database
+                fed = true;
+            }
+        }
+
+        if (fed) {
+            System.out.println("Livestock fed.");
+            statusLabel.setText("Livestock fed. System ready.");
+        } else {
+            System.out.println("Livestock are already fully fed.");
+            statusLabel.setText("No feeding needed. System ready.");
         }
     }
 
@@ -754,7 +812,6 @@ public class ApplicationController {
         // Set a listener for when all transitions are finished
         allTransitions.setOnFinished(event -> {
             // This will ensure that the function only completes after all transitions are finished
-            System.out.println("Data collection complete.");
         });
 
         // Start playing all transitions
@@ -775,10 +832,26 @@ public class ApplicationController {
         return newData;
     }
 
-    @FXML private void onSprayPesticide() {
+    @FXML
+    private void onSprayPesticide() {
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+        boolean sprayed = false;
+
         for (PestData data : pestDataMap.values()) {
-            data.setPestLevel(0);  // Reset pest level to 0
-            DatabaseConnection.insertPestData(data);  // Update database
+            if (data.getPestLevel() > 0) { // Only spray if pest level is greater than 0
+                data.setPestLevel(0);  // Reset pest level to 0
+                data.setTimestamp(timestamp); // Update timestamp
+                DatabaseConnection.insertPestData(data);  // Update database
+                sprayed = true;
+            }
+        }
+
+        if (sprayed) {
+            System.out.println("Pesticide sprayed.");
+            statusLabel.setText("Pesticide sprayed. System ready.");
+        } else {
+            System.out.println("No pests to spray.");
+            statusLabel.setText("No pests to spray. System ready.");
         }
     }
 
@@ -896,29 +969,57 @@ public class ApplicationController {
 
     @FXML
     private void onScanFarm() {
+        if (animatedDrone == null || droneBase == null) {
+            statusLabel.setText("Add a drone and base first.");
+            return;
+        }
+
+        String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
+
         statusLabel.setText("Scanning farm...");
 
-        // Create a list of transitions for each data collection task
-        List<SequentialTransition> scanTransitions = new ArrayList<>();
+        // Create a DroneAnimation instance
+        DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
 
-        // Add each task's transition to the list
-        scanTransitions.add(getCropGrowthDataTransition());
-        scanTransitions.add(getSoilMoistureDataTransition());
-        scanTransitions.add(getLivestockFeedingDataTransition());
-        scanTransitions.add(getPestDataCollectionTransition());
+        // Perform the scan across the entire pane
+        SequentialTransition scanTransition = droneAnim.scanEntirePane(dronePane);
 
-        // Combine all task transitions into one SequentialTransition
-        SequentialTransition allScanTransitions = new SequentialTransition();
-        allScanTransitions.getChildren().addAll(scanTransitions);
+        // Add the transition to return to base after scanning
+        SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
+        scanTransition.getChildren().add(returnToBase);
 
-        // Set onFinished for the entire scan process to indicate completion
-        allScanTransitions.setOnFinished(event -> {
-            System.out.println("Scan complete.");
+        // Set onFinished for the scan to handle data collection
+        scanTransition.setOnFinished(event -> {
+            // Perform data collection after the animation
+            for (Rectangle field : fieldItems) {
+                CropGrowthData cropData = findOrCreateCropData(field);
+                SoilMoistureData soilData = findOrCreateSoilMoistureData(field);
+                PestData pestData = findOrCreatePestData(field);
+                cropData.increaseGrowthLevel();
+                soilData.decreaseMoistureLevel();
+                pestData.increasePestLevel();
+                cropData.setTimestamp(timestamp);
+                soilData.setTimestamp(timestamp);
+                pestData.setTimestamp(timestamp);
+                DatabaseConnection.insertCropGrowthData(cropData);
+                DatabaseConnection.insertSoilMoistureData(soilData);
+                DatabaseConnection.insertPestData(pestData);
+            }
+
+            for (Rectangle pasture : pastureItems) {
+                LivestockFeedingData livestockFeedingData = findOrCreateLivestockFeedingData(pasture);
+                livestockFeedingData.decreaseFeedingLevel();
+                livestockFeedingData.setTimestamp(timestamp);
+                DatabaseConnection.insertLivestockFeedingData(livestockFeedingData);
+            }
+
+            // Update status label after data collection
+            System.out.println("Farm scan and data collection complete.");
             statusLabel.setText("System ready.");
         });
 
-        // Start the scan transitions
-        allScanTransitions.play();
+        // Start the animation
+        scanTransition.play();
     }
 
 }

@@ -14,6 +14,8 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.Rectangle?>
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
@@ -40,8 +42,8 @@
     <ToolBar prefHeight="40.0" prefWidth="1062.0">
         <items>
             <Button onAction="#addItemToPane" text="Add Item" />
-            <Button  onAction="#handleEditItem" text="Edit Item" disable="true" fx:id="editButton"/>
-            <Button onAction="#handleDeleteItem" text="Delete Item" disable="true" fx:id="deleteButton"/>
+            <Button fx:id="editButton" disable="true" onAction="#handleEditItem" text="Edit Item" />
+            <Button fx:id="deleteButton" disable="true" onAction="#handleDeleteItem" text="Delete Item" />
             <Button onAction="#onManageFlightPlan" text="Manage Flight Plan" />
             <Button onAction="#onExecuteFlightPlan" text="Execute Flight Plan" />
             <Button onAction="#onScanFarm" text="Scan Farm" />
@@ -54,71 +56,103 @@
                     <font>
                         <Font size="18.0" />
                     </font>
-               <VBox.margin>
-                  <Insets top="20.0" />
-               </VBox.margin>
+                    <VBox.margin>
+                        <Insets top="20.0" />
+                    </VBox.margin>
                 </Text>
-            <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
-               <children>
-                       <Button onAction="#onCropDataCollect" text="Collect Crop Growth Data" />
-                       <Button onAction="#onViewGrowthChartButtonClicked" text="View Crop Growth Chart" />
-                       <Button onAction="#handleHarvestCrops" text="Harvest Crops" />
-               </children>
-            </HBox>
+                <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
+                    <children>
+                        <Button onAction="#onCropDataCollect" text="Collect Crop Growth Data" />
+                        <Button onAction="#onViewGrowthChartButtonClicked" text="View Crop Growth Chart" />
+                        <Button onAction="#handleHarvestCrops" text="Harvest Crops" />
+                    </children>
+                </HBox>
                 <Separator prefHeight="11.0" prefWidth="535.0" />
-            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Soil Moisture Data" wrappingWidth="152.0">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Text>
-            <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
-               <children>
-                  <Button onAction="#onSoilMoistureCollect" text="Collect Soil Moisture Data" />
-                  <Button onAction="#onViewSoilMoistureChartButtonClicked" text="View Soil Moisture Chart" />
-                  <Button onAction="#onWaterCrops" text="Water Crops" />
-               </children>
-            </HBox>
-            <Separator prefHeight="11.0" prefWidth="535.0" />
-            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Pest Infestation Data" wrappingWidth="165.0">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Text>
-            <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
-               <children>
-                  <Button onAction="#onPestDataCollect" text="Collect Pest Infestation Data" />
-                  <Button onAction="#onViewPestDataChartButtonClicked" text="View Pest Infestation Data" />
-                  <Button onAction="#onSprayPesticide" text="Spray Pesticide" />
-               </children>
-            </HBox>
-            <Separator prefHeight="11.0" prefWidth="535.0" />
-            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Livestock Feeding Data" wrappingWidth="185.0">
-               <font>
-                  <Font size="18.0" />
-               </font>
-            </Text>
-            <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
-               <children>
-                  <Button onAction="#onLivestockFeedingCollect" text="Collect Livestock Feeding Data" />
-                  <Button onAction="#onViewLivestockFeedingChartButtonClicked" text="View Livestock Feeding Data" />
-                  <Button onAction="#onFeedLivestock" text="Feed Livestock" />
-               </children>
-            </HBox>
-            <Separator prefHeight="11.0" prefWidth="535.0" />
-                  <TextArea fx:id="logs" editable="false" prefHeight="442.0" prefWidth="923.0" VBox.vgrow="ALWAYS" />
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Soil Moisture Data" wrappingWidth="152.0">
+                    <font>
+                        <Font size="18.0" />
+                    </font>
+                </Text>
+                <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
+                    <children>
+                        <Button onAction="#onSoilMoistureCollect" text="Collect Soil Moisture Data" />
+                        <Button onAction="#onViewSoilMoistureChartButtonClicked" text="View Soil Moisture Chart" />
+                        <Button onAction="#onWaterCrops" text="Water Crops" />
+                    </children>
+                </HBox>
+                <Separator prefHeight="11.0" prefWidth="535.0" />
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Pest Infestation Data" wrappingWidth="165.0">
+                    <font>
+                        <Font size="18.0" />
+                    </font>
+                </Text>
+                <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
+                    <children>
+                        <Button onAction="#onPestDataCollect" text="Collect Pest Infestation Data" />
+                        <Button onAction="#onViewPestDataChartButtonClicked" text="View Pest Infestation Data" />
+                        <Button onAction="#onSprayPesticide" text="Spray Pesticide" />
+                    </children>
+                </HBox>
+                <Separator prefHeight="11.0" prefWidth="535.0" />
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Livestock Feeding Data" wrappingWidth="185.0">
+                    <font>
+                        <Font size="18.0" />
+                    </font>
+                </Text>
+                <HBox alignment="CENTER" prefHeight="46.0" prefWidth="527.0" spacing="20.0">
+                    <children>
+                        <Button onAction="#onLivestockFeedingCollect" text="Collect Livestock Feeding Data" />
+                        <Button onAction="#onViewLivestockFeedingChartButtonClicked" text="View Livestock Feeding Data" />
+                        <Button onAction="#onFeedLivestock" text="Feed Livestock" />
+                    </children>
+                </HBox>
+                <Separator prefHeight="11.0" prefWidth="535.0" />
+                <TextArea fx:id="logs" editable="false" prefHeight="442.0" prefWidth="923.0" VBox.vgrow="ALWAYS" />
             </VBox>
-         <VBox prefHeight="581.0" prefWidth="17.0">
+         <HBox prefHeight="100.0" prefWidth="200.0">
             <children>
-                     <TreeView fx:id="itemTreeView" prefHeight="926.0" prefWidth="577.0" VBox.vgrow="ALWAYS" />
+                  <VBox prefHeight="581.0" prefWidth="17.0" HBox.hgrow="ALWAYS">
+                      <children>
+                          <TreeView fx:id="itemTreeView" prefHeight="689.0" prefWidth="448.0" VBox.vgrow="ALWAYS" />
+                        <!-- Key for Item Colors and Shapes -->
+                        <VBox alignment="TOP_CENTER" prefHeight="200.0" prefWidth="170.0" spacing="10.0" VBox.vgrow="ALWAYS">
+                            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Item Key" textAlignment="CENTER" wrappingWidth="152.0" VBox.vgrow="ALWAYS">
+                                <font>
+                                    <Font size="18.0" />
+                                </font>
+                            </Text>
+                             <!-- Drone Item -->
+                             <VBox alignment="CENTER">
+                                 <Circle radius="10" style="-fx-fill: black;" />
+                                 <Label text="Drone" />
+                                <!-- Drone Base Item -->
+                                <VBox alignment="CENTER">
+                                    <Rectangle height="30" style="-fx-fill: #333333;" width="30" />
+                                    <Label text="Drone Base" />
+                                   <!-- Field Item -->
+                                   <VBox alignment="CENTER">
+                                       <Rectangle height="30" style="-fx-fill: green;" width="30" />
+                                       <Label text="Field" />
+                                      <!-- Pasture Item -->
+                                      <VBox alignment="CENTER">
+                                          <Rectangle height="30" style="-fx-fill: #d8cc49;" width="30" />
+                                          <Label text="Pasture" />
+                                      </VBox>
+                                   </VBox>
+                                </VBox>
+                             </VBox>
+                        </VBox>
+                      </children>
+                  </VBox>
             </children>
-         </VBox>
+         </HBox>
             <VBox spacing="10.0">
                 <Pane fx:id="dronePane" layoutX="800.0" layoutY="600.0" prefHeight="900.0" prefWidth="900.0" style="-fx-border-color: black;" VBox.vgrow="ALWAYS">
                     <children>
                         <Label fx:id="statusLabel" layoutX="14.0" layoutY="6.0" text="System ready.">
-                     <graphic>
-                              <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
-                     </graphic></Label>
+                            <graphic>
+                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Status:" />
+                            </graphic></Label>
                     </children>
                 </Pane>
             </VBox>
