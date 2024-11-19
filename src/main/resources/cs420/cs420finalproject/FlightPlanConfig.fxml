@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Pos?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.FlightPlanConfigController">
+    <children>
+        <Label text="Configure Flight Plan Order" layoutX="20" layoutY="20"/>
+
+        <!-- ListView to show data types with checkboxes -->
+        <ListView fx:id="dataTypesListView" layoutX="20" layoutY="50" prefWidth="300" prefHeight="200"/>
+
+        <!-- Buttons for moving items in the list -->
+        <HBox spacing="10" layoutX="20" layoutY="270">
+            <Button text="Move Up" onAction="#moveUp"/>
+            <Button text="Move Down" onAction="#moveDown"/>
+        </HBox>
+
+        <!-- Save and Cancel buttons -->
+        <HBox spacing="10" alignment="CENTER_RIGHT" layoutX="20" layoutY="320">
+            <Button text="Save" onAction="#saveFlightPlan"/>
+            <Button text="Cancel" onAction="#cancel"/>
+        </HBox>
+    </children>
+</AnchorPane>
