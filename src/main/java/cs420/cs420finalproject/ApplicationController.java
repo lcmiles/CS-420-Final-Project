@@ -371,6 +371,7 @@ public class ApplicationController {
 
         // Remove from the fieldItems list if it exists
         fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemName));
+        pastureItems.removeIf(pasture -> pasture.getId() != null && pasture.getId().equals(itemName));
     }
 
 

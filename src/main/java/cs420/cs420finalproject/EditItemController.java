@@ -12,7 +12,7 @@ public class EditItemController {
     @FXML
     private TextField itemNameField;
     @FXML
-    private TextField itemTypeField;
+    private ComboBox<String> itemTypeComboBox;  // Changed to ComboBox for item type selection
     @FXML
     private TextField xField;
     @FXML
@@ -35,7 +35,7 @@ public class EditItemController {
 
         // Update basic properties
         selectedItem.setName(itemNameField.getText());
-        selectedItem.setType(itemTypeField.getText());
+        selectedItem.setType(itemTypeComboBox.getValue());  // Get the selected item type from the ComboBox
         selectedItem.setX(Double.parseDouble(xField.getText()));
         selectedItem.setY(Double.parseDouble(yField.getText()));
 
@@ -96,7 +96,7 @@ public class EditItemController {
 
         // Prefill basic fields
         itemNameField.setText(item.getName());
-        itemTypeField.setText(item.getType());
+        itemTypeComboBox.setValue(item.getType());  // Set the item type in the ComboBox
         xField.setText(String.valueOf(item.getX()));
         yField.setText(String.valueOf(item.getY()));
 
