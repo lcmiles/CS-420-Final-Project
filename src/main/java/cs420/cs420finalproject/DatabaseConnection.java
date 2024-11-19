@@ -69,6 +69,41 @@ public class DatabaseConnection {
         }
     }
 
+    // Edit an existing item
+    public static void updateItem(Item item) {
+        String sql = "UPDATE items SET type = ?, x = ?, y = ? WHERE name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, item.getType());
+            pstmt.setDouble(2, item.getX());
+            pstmt.setDouble(3, item.getY());
+            pstmt.setString(4, item.getName());
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static void deleteItem(String itemName) {
+        String sql = "DELETE FROM items WHERE name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, itemName);  // Make sure to pass the item name
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // Delete all relationships where this item is contained in a container
+    public static void deleteContainedItemsRelationships(String itemToDelete) {
+        String sql = "DELETE FROM contained_items WHERE container_name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, itemToDelete);
+            pstmt.executeUpdate();
+            System.out.println("Deleted contained item relationships for: " + itemToDelete);
+        } catch (SQLException e) {
+            System.err.println("Error deleting contained item relationships: " + e.getMessage());
+        }
+    }
 
     public static void insertContainedItem(Container container, Item item) {
         String sql = "INSERT INTO contained_items (container_name, item_name) VALUES(?, ?)";
@@ -82,6 +117,17 @@ public class DatabaseConnection {
         }
     }
 
+    public static void removeContainedItem(String containerName, String itemName) {
+        String sql = "DELETE FROM contained_items WHERE container_name = ? AND item_name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, containerName);
+            pstmt.setString(2, itemName);
+            pstmt.executeUpdate();
+            System.out.println("Removed item: " + itemName + " from container: " + containerName);
+        } catch (SQLException e) {
+            System.err.println("Error removing contained item: " + e.getMessage());
+        }
+    }
 
     public static List<Item> getItems() {
         List<Item> items = new ArrayList<>();
@@ -133,7 +179,7 @@ public class DatabaseConnection {
         return items;
     }
 
-    private static boolean isContainer(String itemName) {
+    public static boolean isContainer(String itemName) {
         String sql = "SELECT COUNT(*) FROM contained_items WHERE container_name = ?";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, itemName);
@@ -222,23 +268,27 @@ public class DatabaseConnection {
         return null;
     }
 
-    public static List<Item> getContainedItemsForContainer(Container container) {
+    public static List<Item> getContainedItemsForContainer(Item item) {
         List<Item> containedItems = new ArrayList<>();
-        String sql = "SELECT item_name FROM contained_items WHERE container_name = ?";
 
-        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, container.getName());
-            ResultSet rs = pstmt.executeQuery();
+        // Only proceed if the item is a container
+        if (item instanceof Container) {
+            String sql = "SELECT item_name FROM contained_items WHERE container_name = ?";
 
-            while (rs.next()) {
-                String itemName = rs.getString("item_name");
-                Item item = getItemByName(itemName); // Fetch item details
-                if (item != null) {
-                    containedItems.add(item);
+            try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, item.getName());
+                ResultSet rs = pstmt.executeQuery();
+
+                while (rs.next()) {
+                    String itemName = rs.getString("item_name");
+                    Item containedItem = getItemByName(itemName); // Fetch item details
+                    if (containedItem != null) {
+                        containedItems.add(containedItem);
+                    }
                 }
+            } catch (SQLException e) {
+                System.err.println("Error fetching contained items for container: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.err.println("Error fetching contained items for container: " + e.getMessage());
         }
 
         return containedItems;
