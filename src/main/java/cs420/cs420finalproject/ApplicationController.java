@@ -32,6 +32,15 @@ public class ApplicationController {
     Set<String> addedItems = new HashSet<>(); // Set to track added items
     private Circle existingDrone;
     private Rectangle existingDroneBase;
+    @FXML private TextField itemNameField;
+    @FXML private TextField itemTypeField;
+    @FXML private TextField xField;
+    @FXML private TextField yField;
+    @FXML private CheckBox containerCheckBox;
+    @FXML private ListView<String> itemListView;
+    @FXML private Button editButton;
+    @FXML private Button deleteButton;
+
 
     public void initialize() {
         statusLabel.setText("System ready.");
@@ -40,7 +49,27 @@ public class ApplicationController {
             cropDataMap.put(data.getFieldId(), data);
         }
         loadItemsIntoTree();
+
+        // Track selection changes in TreeView
+        itemTreeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                handleItemSelection(newValue);
+            }
+        });
+
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
+    }
+
+    private void handleItemSelection(TreeItem<String> selectedItem) {
+        if (selectedItem != null) {
+            // Enable Edit/Delete buttons
+            editButton.setDisable(false);
+            deleteButton.setDisable(false);
+        } else {
+            // Disable buttons when no item is selected
+            editButton.setDisable(true);
+            deleteButton.setDisable(true);
+        }
     }
 
     private TreeItem<String> loadItemsIntoTree() {
@@ -100,6 +129,80 @@ public class ApplicationController {
             expandAllNodes(child);  // Recursively expand child nodes
         }
     }
+
+    @FXML private void handleDeleteItem() {
+        TreeItem<String> selectedItem = itemTreeView.getSelectionModel().getSelectedItem();
+        if (selectedItem != null) {
+            // Get item data from database
+            Item itemToDelete = DatabaseConnection.getItemByName(selectedItem.getValue());
+
+            // Delete from database
+            DatabaseConnection.deleteItem(String.valueOf(itemToDelete));
+
+            // Remove from TreeView
+            itemTreeView.getRoot().getChildren().remove(selectedItem);
+
+            // Optionally reload the visual representation
+            loadItemsIntoVisualPane(new HashMap<>());
+
+            statusLabel.setText("Item deleted successfully.");
+        }
+    }
+
+    @FXML
+    private void handleEditItem() {
+        // Get the selected item from the TreeView
+        TreeItem<String> selectedItem = itemTreeView.getSelectionModel().getSelectedItem();
+        if (selectedItem != null) {
+            // Retrieve item data from the database based on the selected item name
+            Item selectedItemData = DatabaseConnection.getItemByName(selectedItem.getValue());
+
+            // If item data is not found, display a message
+            if (selectedItemData == null) {
+                statusLabel.setText("Item not found.");
+                return;
+            }
+
+            // Open the EditItemView in a modal window with pre-filled data
+            try {
+                FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("editItemView.fxml"));
+                Parent root = fxmlLoader.load();
+                EditItemController controller = fxmlLoader.getController();
+
+                // Prefill the fields in the EditItemController with the selected item's data
+                controller.prefillFields(selectedItemData);
+
+                // Create and show the modal window
+                Stage stage = new Stage();
+                stage.setTitle("Edit Item");
+                Scene scene = new Scene(root);
+                stage.setScene(scene);
+                stage.initModality(Modality.APPLICATION_MODAL);
+                stage.showAndWait();
+
+                // After the modal is closed, check if the item was updated
+                if (controller.isItemUpdated()) {
+                    Item updatedItem = controller.getUpdatedItem();
+
+                    // Update the item in the database
+                    DatabaseConnection.updateItem(updatedItem);
+
+                    // Refresh the TreeView and visual representation of the items
+                    loadItemsIntoTree();
+                    loadItemsIntoVisualPane(new HashMap<>());
+
+                    statusLabel.setText("Item updated successfully.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                statusLabel.setText("Error opening edit item view.");
+            }
+        } else {
+            // If no item is selected in the TreeView, show a message
+            statusLabel.setText("No item selected to edit.");
+        }
+    }
+
 
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
         // Clear previous visual representations but retain drone, base, and labels

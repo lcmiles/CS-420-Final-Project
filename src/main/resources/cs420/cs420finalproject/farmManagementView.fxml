@@ -40,6 +40,8 @@
     <ToolBar prefHeight="40.0" prefWidth="1062.0">
         <items>
             <Button onAction="#addItemToPane" text="Add Item" />
+            <Button  onAction="#handleEditItem" text="Edit Item" disable="true" fx:id="editButton"/>
+            <Button onAction="#handleDeleteItem" text="Delete Item" disable="true" fx:id="deleteButton"/>
         </items>
     </ToolBar>
     <SplitPane dividerPositions="0.32982982982982983, 0.5" prefHeight="908.0" prefWidth="1708.0" VBox.vgrow="ALWAYS">

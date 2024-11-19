@@ -69,6 +69,32 @@ public class DatabaseConnection {
         }
     }
 
+    // Edit an existing item
+    public static void updateItem(Item item) {
+        String sql = "UPDATE items SET type = ?, x = ?, y = ? WHERE name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, item.getType());
+            pstmt.setDouble(2, item.getX());
+            pstmt.setDouble(3, item.getY());
+            pstmt.setString(4, item.getName());
+            pstmt.executeUpdate();
+            System.out.println("Item updated: " + item.getName());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // Delete an item from the database
+    public static void deleteItem(String itemName) {
+        String sql = "DELETE FROM items WHERE name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, itemName);
+            pstmt.executeUpdate();
+            System.out.println("Item deleted: " + itemName);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
 
     public static void insertContainedItem(Container container, Item item) {
         String sql = "INSERT INTO contained_items (container_name, item_name) VALUES(?, ?)";
