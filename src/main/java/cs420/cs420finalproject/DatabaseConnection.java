@@ -117,6 +117,17 @@ public class DatabaseConnection {
         }
     }
 
+    public static void removeContainedItem(String containerName, String itemName) {
+        String sql = "DELETE FROM contained_items WHERE container_name = ? AND item_name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, containerName);
+            pstmt.setString(2, itemName);
+            pstmt.executeUpdate();
+            System.out.println("Removed item: " + itemName + " from container: " + containerName);
+        } catch (SQLException e) {
+            System.err.println("Error removing contained item: " + e.getMessage());
+        }
+    }
 
     public static List<Item> getItems() {
         List<Item> items = new ArrayList<>();
@@ -168,7 +179,7 @@ public class DatabaseConnection {
         return items;
     }
 
-    private static boolean isContainer(String itemName) {
+    public static boolean isContainer(String itemName) {
         String sql = "SELECT COUNT(*) FROM contained_items WHERE container_name = ?";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, itemName);
