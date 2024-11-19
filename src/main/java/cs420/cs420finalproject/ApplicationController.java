@@ -1,5 +1,6 @@
 package cs420.cs420finalproject;
 
+import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -13,9 +14,13 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import javafx.scene.chart.LineChart;
+import javafx.util.Duration;
+
 import java.io.PrintStream;
 
 public class ApplicationController {
@@ -44,7 +49,6 @@ public class ApplicationController {
     @FXML private ListView<String> itemListView;
     @FXML private Button editButton;
     @FXML private Button deleteButton;
-
 
     public void initialize() {
         statusLabel.setText("System ready.");
@@ -436,18 +440,17 @@ public class ApplicationController {
         }
     }
 
-    @FXML private void onCropDataCollect() {
+    @FXML
+    private void onCropDataCollect() {
         if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
             statusLabel.setText("Add a drone, base, and fields first.");
             return;
         }
         statusLabel.setText("Collecting crop growth data...");
 
-        // Initialize the drone animation
         DroneAnimation droneAnim = new DroneAnimation(animatedDrone);
         String timestamp = new SimpleDateFormat("dd/MM/yy HH:mm:ss").format(new Date());
 
-        // Create transitions for moving the drone to each field and then back to the base
         List<SequentialTransition> transitions = new ArrayList<>();
 
         // Loop through field items and create a move transition for each field
@@ -465,9 +468,10 @@ public class ApplicationController {
             transitions.add(moveToField);
         }
 
-        // Create the transition for the drone to return to the base
+        // Create the transition for the drone to return to the base after all fields have been visited
         SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
         returnToBase.setOnFinished(event -> {
+            // Once the drone returns to the base, update the status label
             statusLabel.setText("System ready.");
         });
         transitions.add(returnToBase);
@@ -476,13 +480,16 @@ public class ApplicationController {
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
 
-        // Debugging: confirm that all transitions are set
+        // Start all transitions
         allTransitions.setOnFinished(event -> {
-            statusLabel.setText("System ready.");
+            // This will ensure that the function only completes after all transitions are finished
+            System.out.println("Data collection complete.");
         });
 
+        // Play the transition
         allTransitions.play();
     }
+
 
     public CropGrowthData findOrCreateCropData(Rectangle field) {
         String fieldId = "Field " + fieldItems.indexOf(field);
@@ -579,7 +586,8 @@ public class ApplicationController {
         }
     }
 
-    @FXML private void onSoilMoistureCollect() {
+    @FXML
+    private void onSoilMoistureCollect() {
         if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
             statusLabel.setText("Add a drone, base, and fields first.");
             return;
@@ -591,24 +599,29 @@ public class ApplicationController {
 
         List<SequentialTransition> transitions = new ArrayList<>();
 
+        // Loop through field items and create a move transition for each field
         for (Rectangle field : fieldItems) {
             SoilMoistureData soilData = findOrCreateSoilMoistureData(field);
             soilData.decreaseMoistureLevel();  // Decrease moisture between 0-3
             soilData.setTimestamp(timestamp);
 
+            // Create the transition for moving the drone to the field
             SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
             moveToField.setOnFinished(event -> {
+                // Once the drone reaches the field, insert soil moisture data into the database
                 DatabaseConnection.insertSoilMoistureData(soilData);
             });
             transitions.add(moveToField);
         }
 
+        // Create the transition for the drone to return to the base
         SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
         returnToBase.setOnFinished(event -> {
             statusLabel.setText("System ready.");
         });
         transitions.add(returnToBase);
 
+        // Combine all transitions and play them sequentially
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
         allTransitions.play();
@@ -635,8 +648,9 @@ public class ApplicationController {
         }
     }
 
-    @FXML private void onLivestockFeedingCollect() {
-        if (animatedDrone == null || droneBase == null || pastureItems.isEmpty()) {  // Check pastureItems
+    @FXML
+    private void onLivestockFeedingCollect() {
+        if (animatedDrone == null || droneBase == null || pastureItems.isEmpty()) {
             statusLabel.setText("Add a drone, base, and pastures first.");
             return;
         }
@@ -653,23 +667,28 @@ public class ApplicationController {
             feedingData.decreaseFeedingLevel();  // Decrease feeding level between 0-3
             feedingData.setTimestamp(timestamp);
 
+            // Create the transition for moving the drone to the pasture
             SequentialTransition moveToPasture = droneAnim.moveDrone(pasture.getLayoutX(), pasture.getLayoutY());
             moveToPasture.setOnFinished(event -> {
+                // Once the drone reaches the pasture, insert livestock feeding data into the database
                 DatabaseConnection.insertLivestockFeedingData(feedingData);
             });
             transitions.add(moveToPasture);
         }
 
+        // Create the transition for the drone to return to the base
         SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
         returnToBase.setOnFinished(event -> {
             statusLabel.setText("System ready.");
         });
         transitions.add(returnToBase);
 
+        // Combine all transitions and play them sequentially
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
         allTransitions.play();
     }
+
 
     private LivestockFeedingData findOrCreateLivestockFeedingData(Rectangle pasture) {
         String pastureId = "Pasture " + pastureItems.indexOf(pasture);  // Update to pastureItems list
@@ -692,7 +711,8 @@ public class ApplicationController {
         }
     }
 
-    @FXML private void onPestDataCollect() {
+    @FXML
+    private void onPestDataCollect() {
         if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
             statusLabel.setText("Add a drone, base, and fields first.");
             return;
@@ -704,26 +724,40 @@ public class ApplicationController {
 
         List<SequentialTransition> transitions = new ArrayList<>();
 
+        // Loop through field items and create a move transition for each field
         for (Rectangle field : fieldItems) {
             PestData pestData = findOrCreatePestData(field);
             pestData.increasePestLevel();  // Increase pest level between 0-3
             pestData.setTimestamp(timestamp);
 
+            // Create the transition for moving the drone to the field
             SequentialTransition moveToField = droneAnim.moveDrone(field.getLayoutX(), field.getLayoutY());
             moveToField.setOnFinished(event -> {
+                // Once the drone reaches the field, insert pest data into the database
                 DatabaseConnection.insertPestData(pestData);
             });
             transitions.add(moveToField);
         }
 
+        // Create the transition for the drone to return to the base after all fields have been visited
         SequentialTransition returnToBase = droneAnim.moveDrone(droneBase.getLayoutX(), droneBase.getLayoutY());
         returnToBase.setOnFinished(event -> {
+            // Once the drone returns to the base, update the status label
             statusLabel.setText("System ready.");
         });
         transitions.add(returnToBase);
 
+        // Combine all transitions and play them sequentially
         SequentialTransition allTransitions = new SequentialTransition();
         allTransitions.getChildren().addAll(transitions);
+
+        // Set a listener for when all transitions are finished
+        allTransitions.setOnFinished(event -> {
+            // This will ensure that the function only completes after all transitions are finished
+            System.out.println("Data collection complete.");
+        });
+
+        // Start playing all transitions
         allTransitions.play();
     }
 
@@ -746,6 +780,145 @@ public class ApplicationController {
             data.setPestLevel(0);  // Reset pest level to 0
             DatabaseConnection.insertPestData(data);  // Update database
         }
+    }
+
+    @FXML
+    private void onManageFlightPlan() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("FlightPlanConfig.fxml"));
+            Parent root = loader.load();
+
+            // Create the scene and stage for the flight plan configuration dialog
+            Stage dialogStage = new Stage();
+            dialogStage.setTitle("Flight Plan Configuration");
+            dialogStage.setScene(new Scene(root));
+            dialogStage.showAndWait();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    @FXML
+    private void onExecuteFlightPlan() {
+        // Get the flight plan order from the database
+        List<String> flightPlan = DatabaseConnection.getFlightPlan();
+
+        // Check if the flight plan is empty
+        if (flightPlan.isEmpty()) {
+            System.out.println("No tasks found in the flight plan.");
+            return;
+        }
+
+        // Initialize a list of SequentialTransition for chaining tasks
+        List<SequentialTransition> taskTransitions = new ArrayList<>();
+
+        // Loop through each task in the flight plan and add the corresponding method to the transitions
+        for (String task : flightPlan) {
+            SequentialTransition taskTransition = null; // initialize as null
+
+            switch (task) {
+                case "Crop Growth":
+                    taskTransition = getCropGrowthDataTransition();  // Add the crop growth data collection transition
+                    break;
+                case "Soil Moisture":
+                    taskTransition = getSoilMoistureDataTransition();  // Add the soil moisture data collection transition
+                    break;
+                case "Livestock Feeding":
+                    taskTransition = getLivestockFeedingDataTransition();  // Add the livestock feeding data collection transition
+                    break;
+                case "Pest Data":
+                    taskTransition = getPestDataCollectionTransition();  // Add the pest data collection transition
+                    break;
+                default:
+                    System.out.println("Unknown task: " + task);
+                    break;
+            }
+
+            // Ensure the taskTransition is not null before adding
+            if (taskTransition != null) {
+                taskTransitions.add(taskTransition);
+            }
+        }
+
+        // Combine all task transitions into one SequentialTransition
+        SequentialTransition allTasksTransition = new SequentialTransition();
+        allTasksTransition.getChildren().addAll(taskTransitions);
+
+        // Set onFinished for the entire flight plan to indicate completion
+        allTasksTransition.setOnFinished(event -> {
+            System.out.println("Flight plan execution complete.");
+            statusLabel.setText("Flight plan executed.");
+        });
+
+        // Start the flight plan transitions
+        allTasksTransition.play();
+    }
+
+// These methods need to return SequentialTransitions for each of the tasks
+
+    private SequentialTransition getCropGrowthDataTransition() {
+        SequentialTransition cropGrowthTransition = new SequentialTransition();
+
+        // You can include logic to perform transitions (animation) and database tasks
+        cropGrowthTransition.getChildren().add(new PauseTransition(Duration.seconds(2))); // Placeholder for animation/transition
+        cropGrowthTransition.setOnFinished(event -> onCropDataCollect()); // Execute crop data collection
+        return cropGrowthTransition;
+    }
+
+    private SequentialTransition getSoilMoistureDataTransition() {
+        SequentialTransition soilMoistureTransition = new SequentialTransition();
+
+        // Placeholder for transition/animation logic
+        soilMoistureTransition.getChildren().add(new PauseTransition(Duration.seconds(2)));
+        soilMoistureTransition.setOnFinished(event -> onSoilMoistureCollect()); // Execute soil moisture data collection
+        return soilMoistureTransition;
+    }
+
+    private SequentialTransition getLivestockFeedingDataTransition() {
+        SequentialTransition livestockFeedingTransition = new SequentialTransition();
+
+        // Placeholder for transition/animation logic
+        livestockFeedingTransition.getChildren().add(new PauseTransition(Duration.seconds(2)));
+        livestockFeedingTransition.setOnFinished(event -> onLivestockFeedingCollect()); // Execute livestock feeding data collection
+        return livestockFeedingTransition;
+    }
+
+    private SequentialTransition getPestDataCollectionTransition() {
+        SequentialTransition pestDataTransition = new SequentialTransition();
+
+        // Placeholder for transition/animation logic
+        pestDataTransition.getChildren().add(new PauseTransition(Duration.seconds(2)));
+        pestDataTransition.setOnFinished(event -> onPestDataCollect()); // Execute pest data collection
+        return pestDataTransition;
+    }
+
+    @FXML
+    private void onScanFarm() {
+        statusLabel.setText("Scanning farm...");
+
+        // Create a list of transitions for each data collection task
+        List<SequentialTransition> scanTransitions = new ArrayList<>();
+
+        // Add each task's transition to the list
+        scanTransitions.add(getCropGrowthDataTransition());
+        scanTransitions.add(getSoilMoistureDataTransition());
+        scanTransitions.add(getLivestockFeedingDataTransition());
+        scanTransitions.add(getPestDataCollectionTransition());
+
+        // Combine all task transitions into one SequentialTransition
+        SequentialTransition allScanTransitions = new SequentialTransition();
+        allScanTransitions.getChildren().addAll(scanTransitions);
+
+        // Set onFinished for the entire scan process to indicate completion
+        allScanTransitions.setOnFinished(event -> {
+            System.out.println("Scan complete.");
+            statusLabel.setText("System ready.");
+        });
+
+        // Start the scan transitions
+        allScanTransitions.play();
     }
 
 }

@@ -390,6 +390,47 @@ public class DatabaseConnection {
         return containedItems;
     }
 
+    public static void insertFlightPlan(List<String> taskOrder) {
+        String deleteSql = "DELETE FROM flight_plan"; // Delete existing flight plan
+        String insertSql = "INSERT INTO flight_plan(task_order, task_name) VALUES(?, ?)";
+
+        try (Connection conn = connect();
+             PreparedStatement deletePstmt = conn.prepareStatement(deleteSql);
+             PreparedStatement insertPstmt = conn.prepareStatement(insertSql)) {
+
+            // Delete existing flight plan data
+            deletePstmt.executeUpdate();
+
+            // Insert new flight plan
+            int order = 1;
+            for (String task : taskOrder) {
+                insertPstmt.setInt(1, order);
+                insertPstmt.setString(2, task);
+                insertPstmt.executeUpdate();
+                order++;
+            }
+
+            System.out.println("Flight plan saved successfully.");
+        } catch (SQLException e) {
+            System.err.println("Error saving flight plan: " + e.getMessage());
+        }
+    }
+
+    public static List<String> getFlightPlan() {
+        List<String> flightPlan = new ArrayList<>();
+        String sql = "SELECT task_name FROM flight_plan ORDER BY task_order;";
+        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String taskName = rs.getString("task_name");
+                flightPlan.add(taskName);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving flight plan: " + e.getMessage());
+        }
+        return flightPlan;
+    }
+
     // Initialize the database (tables creation)
     public static void initializeDatabase() {
         try (Connection conn = connect()) {
@@ -442,6 +483,12 @@ public class DatabaseConnection {
                         " field_id TEXT NOT NULL\n" +
                         ");";
                 conn.createStatement().execute(pestDataSql);
+                String flightPlanSql = "CREATE TABLE IF NOT EXISTS flight_plan (\n" +
+                        " id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
+                        " task_name TEXT NOT NULL,\n" +
+                        " task_order INTEGER NOT NULL\n" +
+                        ");";
+                conn.createStatement().execute(flightPlanSql);
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());

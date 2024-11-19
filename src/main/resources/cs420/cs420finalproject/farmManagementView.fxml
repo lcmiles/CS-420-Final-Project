@@ -42,6 +42,9 @@
             <Button onAction="#addItemToPane" text="Add Item" />
             <Button  onAction="#handleEditItem" text="Edit Item" disable="true" fx:id="editButton"/>
             <Button onAction="#handleDeleteItem" text="Delete Item" disable="true" fx:id="deleteButton"/>
+            <Button onAction="#onManageFlightPlan" text="Manage Flight Plan" />
+            <Button onAction="#onExecuteFlightPlan" text="Execute Flight Plan" />
+            <Button onAction="#onScanFarm" text="Scan Farm" />
         </items>
     </ToolBar>
     <SplitPane dividerPositions="0.32982982982982983, 0.5" prefHeight="908.0" prefWidth="1708.0" VBox.vgrow="ALWAYS">
