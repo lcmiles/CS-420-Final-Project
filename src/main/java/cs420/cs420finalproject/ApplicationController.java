@@ -26,6 +26,7 @@ public class ApplicationController {
     private Circle animatedDrone;
     private Rectangle droneBase;
     private List<Rectangle> fieldItems = new ArrayList<>(); // List of fields for the drone to visit
+    private List<Rectangle> pastureItems = new ArrayList<>(); // List of pastures for the drone to visit
     private Map<String, CropGrowthData> cropDataMap = new HashMap<>(); // Mapping of crop data
     private Map<String, SoilMoistureData> soilDataMap = new HashMap<>(); // Mapping of soil moisture data
     private Map<String, LivestockFeedingData> livestockDataMap = new HashMap<>(); // Mapping of livestock feeding data
@@ -64,6 +65,11 @@ public class ApplicationController {
             pestDataMap.put(data.getFieldId(), data);
         }
         loadItemsIntoTree();
+        itemTreeView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null) {
+                handleItemSelection(newValue);
+            }
+        });
         System.setOut(new PrintStream(new TextAreaOutputStream(System.out, logs), true));
     }
 
@@ -309,7 +315,12 @@ public class ApplicationController {
             // Set a higher view order for contained items (to appear above containers)
             if (itemType.equalsIgnoreCase("field")) {
                 itemRect.setViewOrder(1); // Ensure fields appear above containers
+                itemRect.setStyle("-fx-fill: green;");
                 fieldItems.add(itemRect); // Add field to the fieldItems list
+            } else if (itemType.equalsIgnoreCase("pasture")) {
+                itemRect.setViewOrder(1); // Ensure pastures appear above containers
+                itemRect.setStyle("-fx-fill: #d8cc49;"); // Light green for pastures
+                pastureItems.add(itemRect); // Add pasture to the pastureItems list
             }
 
             // Add buffer space for next item
@@ -323,6 +334,10 @@ public class ApplicationController {
             if (itemType.equalsIgnoreCase("field")) {
                 containerRect.setStyle("-fx-fill: green; -fx-stroke: black; -fx-stroke-width: 2;");
                 fieldItems.add(containerRect); // Add this container to the fieldItems list
+            } else if (itemType.equalsIgnoreCase("pasture")) {
+                // If this is a pasture, make it light green
+                containerRect.setStyle("-fx-fill: #d8cc49; -fx-stroke: black; -fx-stroke-width: 2;");
+                pastureItems.add(containerRect); // Add this container to the pastureItems list
             } else {
                 containerRect.setStyle("-fx-fill: lightgray; -fx-stroke: black; -fx-stroke-width: 2;");
             }
@@ -620,7 +635,7 @@ public class ApplicationController {
     }
 
     @FXML private void onLivestockFeedingCollect() {
-        if (animatedDrone == null || droneBase == null || fieldItems.isEmpty()) {
+        if (animatedDrone == null || droneBase == null || pastureItems.isEmpty()) {  // Check pastureItems
             statusLabel.setText("Add a drone, base, and pastures first.");
             return;
         }
@@ -631,7 +646,8 @@ public class ApplicationController {
 
         List<SequentialTransition> transitions = new ArrayList<>();
 
-        for (Rectangle pasture : fieldItems) {
+        // Iterate over pastureItems instead of fieldItems
+        for (Rectangle pasture : pastureItems) {
             LivestockFeedingData feedingData = findOrCreateLivestockFeedingData(pasture);
             feedingData.decreaseFeedingLevel();  // Decrease feeding level between 0-3
             feedingData.setTimestamp(timestamp);
@@ -655,7 +671,7 @@ public class ApplicationController {
     }
 
     private LivestockFeedingData findOrCreateLivestockFeedingData(Rectangle pasture) {
-        String pastureId = "Pasture " + fieldItems.indexOf(pasture);
+        String pastureId = "Pasture " + pastureItems.indexOf(pasture);  // Update to pastureItems list
         if (livestockDataMap.containsKey(pastureId)) {
             return livestockDataMap.get(pastureId);
         }
