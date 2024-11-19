@@ -130,26 +130,30 @@ public class ApplicationController {
         }
     }
 
-    @FXML private void handleDeleteItem() {
+    @FXML
+    private void handleDeleteItem() {
         TreeItem<String> selectedItem = itemTreeView.getSelectionModel().getSelectedItem();
         if (selectedItem != null) {
-            System.out.println("Attempting to delete item: " + selectedItem.getValue()); // Debugging print
+            System.out.println("Attempting to delete item: " + selectedItem.getValue());
 
             // Get item data from database
-            Item itemToDelete = DatabaseConnection.getItemByName(selectedItem.getValue());
+            String itemToDelete = selectedItem.getValue();
 
-            // Debugging: Print item details
             if (itemToDelete != null) {
-                System.out.println("Item found for deletion: " + itemToDelete.getName() + " of type " + itemToDelete.getType());
+                System.out.println("Item found for deletion: " + itemToDelete);
 
-                // Delete from database using the item name or ID
-                DatabaseConnection.deleteItem(itemToDelete.getName());  // Use item name to delete
-            } else {
-                System.out.println("No item found for deletion.");
+                // Delete item relationships in contained_items table
+                DatabaseConnection.deleteContainedItemsRelationships(itemToDelete);
+
+                // Delete the item itself from the items table
+                DatabaseConnection.deleteItem(itemToDelete);
             }
 
             // Remove from TreeView
             itemTreeView.getRoot().getChildren().remove(selectedItem);
+
+            // Refresh TreeView
+            loadItemsIntoTree();  // Reload tree to reflect changes
 
             // Optionally reload the visual representation
             loadItemsIntoVisualPane(new HashMap<>());
@@ -159,6 +163,8 @@ public class ApplicationController {
             System.out.println("No item selected for deletion.");
         }
     }
+
+
 
 
     @FXML

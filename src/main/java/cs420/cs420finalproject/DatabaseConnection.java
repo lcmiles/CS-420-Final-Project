@@ -93,6 +93,18 @@ public class DatabaseConnection {
         }
     }
 
+    // Delete all relationships where this item is contained in a container
+    public static void deleteContainedItemsRelationships(String itemToDelete) {
+        String sql = "DELETE FROM contained_items WHERE container_name = ?";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, itemToDelete);
+            pstmt.executeUpdate();
+            System.out.println("Deleted contained item relationships for: " + itemToDelete);
+        } catch (SQLException e) {
+            System.err.println("Error deleting contained item relationships: " + e.getMessage());
+        }
+    }
+
     public static void insertContainedItem(Container container, Item item) {
         String sql = "INSERT INTO contained_items (container_name, item_name) VALUES(?, ?)";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
