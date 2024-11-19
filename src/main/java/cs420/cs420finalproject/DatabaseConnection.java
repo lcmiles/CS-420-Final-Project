@@ -54,6 +54,102 @@ public class DatabaseConnection {
         }
     }
 
+    // Insert soil moisture data into the database
+    public static void insertSoilMoistureData(SoilMoistureData soilData) {
+        String sql = "INSERT INTO soil_moisture(timestamp, moisture_level, field_id) VALUES(?, ?, ?)";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, soilData.getTimestamp());
+            pstmt.setInt(2, soilData.getMoistureLevel());
+            pstmt.setString(3, soilData.getFieldId());
+            pstmt.executeUpdate();
+            System.out.println("Soil moisture data inserted: " + soilData.getTimestamp() + ", Moisture Level: " + soilData.getMoistureLevel());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // Get all soil moisture data
+    public static List<SoilMoistureData> getSoilMoistureData() {
+        List<SoilMoistureData> dataList = new ArrayList<>();
+        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+            String sql = "SELECT timestamp, moisture_level, field_id FROM soil_moisture ORDER BY timestamp;";
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String timestamp = rs.getString("timestamp");
+                int moistureLevel = rs.getInt("moisture_level");
+                String fieldId = rs.getString("field_id");
+                dataList.add(new SoilMoistureData(timestamp, fieldId, moistureLevel));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving soil moisture data: " + e.getMessage());
+        }
+        return dataList;
+    }
+
+    // Insert livestock feeding data into the database
+    public static void insertLivestockFeedingData(LivestockFeedingData livestockData) {
+        String sql = "INSERT INTO livestock_feeding(timestamp, feeding_level, pasture_id) VALUES(?, ?, ?)";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, livestockData.getTimestamp());
+            pstmt.setInt(2, livestockData.getFeedingLevel());
+            pstmt.setString(3, livestockData.getPastureId());
+            pstmt.executeUpdate();
+            System.out.println("Livestock feeding data inserted: " + livestockData.getTimestamp() + ", Feeding Level: " + livestockData.getFeedingLevel());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // Get all livestock feeding data
+    public static List<LivestockFeedingData> getLivestockFeedingData() {
+        List<LivestockFeedingData> dataList = new ArrayList<>();
+        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+            String sql = "SELECT timestamp, feeding_level, pasture_id FROM livestock_feeding ORDER BY timestamp;";
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String timestamp = rs.getString("timestamp");
+                int feedingLevel = rs.getInt("feeding_level");
+                String pastureId = rs.getString("pasture_id");
+                dataList.add(new LivestockFeedingData(timestamp, pastureId, feedingLevel));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving livestock feeding data: " + e.getMessage());
+        }
+        return dataList;
+    }
+
+    // Insert pest data into the database
+    public static void insertPestData(PestData pestData) {
+        String sql = "INSERT INTO pest_data(timestamp, pest_level, field_id) VALUES(?, ?, ?)";
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, pestData.getTimestamp());
+            pstmt.setInt(2, pestData.getPestLevel());
+            pstmt.setString(3, pestData.getFieldId());
+            pstmt.executeUpdate();
+            System.out.println("Pest data inserted: " + pestData.getTimestamp() + ", Pest Level: " + pestData.getPestLevel());
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    // Get all pest data
+    public static List<PestData> getPestData() {
+        List<PestData> dataList = new ArrayList<>();
+        try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+            String sql = "SELECT timestamp, pest_level, field_id FROM pest_data ORDER BY timestamp;";
+            ResultSet rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                String timestamp = rs.getString("timestamp");
+                int pestLevel = rs.getInt("pest_level");
+                String fieldId = rs.getString("field_id");
+                dataList.add(new PestData(timestamp, fieldId, pestLevel));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving pest data: " + e.getMessage());
+        }
+        return dataList;
+    }
+
     // Insert item into the database (no recursion needed now)
     public static void insertItem(Item item) {
         String sql = "INSERT INTO items (name, type, x, y) VALUES(?, ?, ?, ?)";
@@ -325,6 +421,27 @@ public class DatabaseConnection {
                         ");";
                 conn.createStatement().execute(containedItemsSql);
                 System.out.println("Database initialized.");
+                String soilMoistureSql = "CREATE TABLE IF NOT EXISTS soil_moisture (\n" +
+                        " id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
+                        " timestamp TEXT NOT NULL,\n" +
+                        " moisture_level INTEGER NOT NULL,\n" +
+                        " field_id TEXT NOT NULL\n" +
+                        ");";
+                conn.createStatement().execute(soilMoistureSql);
+                String livestockFeedingSql = "CREATE TABLE IF NOT EXISTS livestock_feeding (\n" +
+                        " id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
+                        " timestamp TEXT NOT NULL,\n" +
+                        " feeding_level INTEGER NOT NULL,\n" +
+                        " pasture_id TEXT NOT NULL\n" +
+                        ");";
+                conn.createStatement().execute(livestockFeedingSql);
+                String pestDataSql = "CREATE TABLE IF NOT EXISTS pest_data (\n" +
+                        " id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
+                        " timestamp TEXT NOT NULL,\n" +
+                        " pest_level INTEGER NOT NULL,\n" +
+                        " field_id TEXT NOT NULL\n" +
+                        ");";
+                conn.createStatement().execute(pestDataSql);
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
