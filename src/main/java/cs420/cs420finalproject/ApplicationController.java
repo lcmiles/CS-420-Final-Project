@@ -280,6 +280,8 @@ public class ApplicationController {
     private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
         String itemName = node.getValue();
         Item item = DatabaseConnection.getItemByName(itemName);
+        Random rand = new Random();
+        String uniqueItemId = itemName + rand.nextInt(1000);
 
         if (item == null) {
             return; // If item is null, skip this item
@@ -295,13 +297,12 @@ public class ApplicationController {
         }
 
         // Mark the item as added
-        addedItems.add(itemName);
+        addedItems.add(itemName + uniqueItemId);
 
         // Remove any existing visual elements for the current item to prevent duplicates
         removeExistingVisual(itemName);
 
         // Size adjustments based on length and width
-        double containerSize = length * 1.5; // Adjust size for containers based on length and width
         double itemSizeX = width;
         double itemSizeY = length;
 
@@ -352,7 +353,7 @@ public class ApplicationController {
             // Add buffer space for next item
             offsetY += itemRect.getHeight() + 15; // Add space based on item height
         } else {
-            // Load the container as a rectangle with adjusted size based on length and width
+            // Load the container as a rectangle with fixed size based on length and width
             Rectangle containerRect = new Rectangle(length, width); // Use the actual length and width for the container
             containerRect.setId(itemType); // Assign the itemType as the ID for uniqueness
 
@@ -383,23 +384,13 @@ public class ApplicationController {
             // Set a lower view order for the container (so contained items appear above it)
             containerRect.setViewOrder(0);
 
-            // Track the container's height as we add items
-            double containerHeight = containerRect.getHeight();
-
             // Recursively load contained items within the container
             double containedOffsetX = offsetX + 10;
             double containedOffsetY = offsetY + 10;
             for (TreeItem<String> child : node.getChildren()) {
                 loadItemNodeVisual(child, depth + 1, containedOffsetX, containedOffsetY, containerMap);
                 containedOffsetY += 15 + 50; // Adjusted buffer space between contained items (height + 20)
-
-                // Increase the container height by 50 pixels for each contained item
-                containerHeight += 15; // Increase height for each item
             }
-
-            // Update the container's height after all contained items are loaded
-            containerRect.setHeight(containerHeight + 20);
-            containerLabel.setLayoutY(offsetY + containerRect.getHeight()); // Position directly below the container
         }
     }
 
@@ -426,7 +417,6 @@ public class ApplicationController {
         fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemName));
         pastureItems.removeIf(pasture -> pasture.getId() != null && pasture.getId().equals(itemName));
     }
-
 
     @FXML public void addItemToPane() {
         openItemDetailsPopup();
