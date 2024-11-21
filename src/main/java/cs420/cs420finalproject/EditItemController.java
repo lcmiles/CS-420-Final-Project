@@ -33,6 +33,9 @@ public class EditItemController {
             return;
         }
 
+        // Store the original name before making changes
+        String originalName = selectedItem.getName();
+
         // Update basic properties
         selectedItem.setName(itemNameField.getText());
         selectedItem.setType(itemTypeComboBox.getValue());  // Get the selected item type from the ComboBox
@@ -76,12 +79,16 @@ public class EditItemController {
             );
 
             // Ensure that the item no longer has any contained items
-            DatabaseConnection.deleteContainedItemsRelationships(selectedItem.getName());
+            DatabaseConnection.deleteContainedItemsRelationships(originalName);
         }
 
-        // Update the item in the database
-        DatabaseConnection.updateItem(selectedItem);
+        // Update the item in the database, passing the original name
+        DatabaseConnection.updateItem(selectedItem, originalName);
+
+        // Update the locally stored reference
         updatedItem = selectedItem;
+
+        // Close the popup window
         closePopup();
     }
 

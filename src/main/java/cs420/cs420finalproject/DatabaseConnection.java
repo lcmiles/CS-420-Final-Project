@@ -166,18 +166,21 @@ public class DatabaseConnection {
     }
 
     // Edit an existing item
-    public static void updateItem(Item item) {
-        String sql = "UPDATE items SET type = ?, x = ?, y = ? WHERE name = ?";
+// Edit an existing item
+    public static void updateItem(Item item, String originalName) {
+        String sql = "UPDATE items SET name = ?, type = ?, x = ?, y = ? WHERE name = ?";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, item.getType());
-            pstmt.setDouble(2, item.getX());
-            pstmt.setDouble(3, item.getY());
-            pstmt.setString(4, item.getName());
+            pstmt.setString(1, item.getName()); // New name
+            pstmt.setString(2, item.getType());
+            pstmt.setDouble(3, item.getX());
+            pstmt.setDouble(4, item.getY());
+            pstmt.setString(5, originalName); // Original name for WHERE clause
             pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
+
 
     public static void deleteItem(String itemName) {
         String sql = "DELETE FROM items WHERE name = ?";

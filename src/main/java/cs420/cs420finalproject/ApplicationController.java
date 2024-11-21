@@ -207,6 +207,9 @@ public class ApplicationController {
                 return;
             }
 
+            // Save the original name before editing
+            String originalName = selectedItemData.getName();
+
             // Open the EditItemView in a modal window with pre-filled data
             try {
                 FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("editItemView.fxml"));
@@ -229,14 +232,15 @@ public class ApplicationController {
 
                 // After the modal is closed, check if the item was updated
                 if (controller.isItemUpdated()) {
+
+                    removeExistingVisual(originalName);
+
+                    loadItemsIntoTree();
+
                     Item updatedItem = controller.getUpdatedItem();
 
-                    // Update the item in the database
-                    DatabaseConnection.updateItem(updatedItem);
-
-                    // Refresh the TreeView and visual representation of the items
-                    loadItemsIntoTree();
-                    loadItemsIntoVisualPane(new HashMap<>());
+                    // Update the item in the database, passing the original name
+                    DatabaseConnection.updateItem(updatedItem, originalName);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -247,6 +251,7 @@ public class ApplicationController {
             System.out.println("No item selected to edit."); // Debugging print
         }
     }
+
 
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
         // Clear previous visual representations but retain drone, base, and labels
@@ -400,19 +405,25 @@ public class ApplicationController {
     }
 
     private void removeExistingVisual(String itemName) {
-        // Remove from the dronePane if it exists (both rectangles and labels)
+        // Remove all visuals (rectangles, labels, circles for the drone)
         dronePane.getChildren().removeIf(node -> {
-            if (node instanceof Rectangle) {
-                Rectangle rect = (Rectangle) node;
-                return rect.getId() != null && rect.getId().equals(itemName);
+            if (node instanceof Rectangle || node instanceof Circle) {
+                return node.getId() != null && node.getId().equals(itemName);
             } else if (node instanceof Label) {
                 Label label = (Label) node;
-                return label.getText().contains(itemName);  // Match label by text
+                return label.getText().contains(itemName);
             }
             return false;
         });
 
-        // Remove from the fieldItems list if it exists
+        // Clear drone-specific visuals if the name matches
+        if (itemName.equalsIgnoreCase("drone")) {
+            animatedDrone = null; // Clear reference
+        } else if (itemName.equalsIgnoreCase("drone base")) {
+            droneBase = null; // Clear reference
+        }
+
+        // Remove from lists
         fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemName));
         pastureItems.removeIf(pasture -> pasture.getId() != null && pasture.getId().equals(itemName));
     }
@@ -461,50 +472,26 @@ public class ApplicationController {
     }
 
     private void addDroneToPane(double x, double y) {
-        if (animatedDrone == null) {
-            animatedDrone = new Circle(10);
-            animatedDrone.setLayoutX(x);
-            animatedDrone.setLayoutY(y);
-            dronePane.getChildren().add(animatedDrone);
-        }
+
+        animatedDrone = new Circle(10);
+        animatedDrone.setLayoutX(x);
+        animatedDrone.setLayoutY(y);
+        animatedDrone.setId("drone");
+        dronePane.getChildren().add(animatedDrone);
+
     }
 
-    private void addDroneBase(double x, double y,String name) {
-        if (droneBase == null) {
+    private void addDroneBase(double x, double y, String name) {
 
-            removeExistingVisual(name);
+        droneBase = new Rectangle(50, 50);
+        droneBase.setLayoutX(x);
+        droneBase.setLayoutY(y);
+        droneBase.setId("drone base");
+        droneBase.setStyle("-fx-fill: #333333; -fx-stroke: black; -fx-stroke-width: 2;");
+        dronePane.getChildren().add(droneBase);
 
-            droneBase = new Rectangle(50, 50);
-            droneBase.setLayoutX(x);
-            droneBase.setLayoutY(y);
-            droneBase.setStyle("-fx-fill: #333333; -fx-stroke: black; -fx-stroke-width: 2;");
-            dronePane.getChildren().add(droneBase);
-
-            // Label the drone base
-            Label baseLabel = new Label("Drone Base");
-            baseLabel.setLayoutX(x);
-            baseLabel.setLayoutY(y + droneBase.getHeight() + 5); // Position below the rectangle
-            dronePane.getChildren().add(baseLabel);
-        }
     }
 
-
-//    private void addDroneBase() {
-//        // Add a visual drone base like any other item
-//        if (droneBase == null) {
-//            Rectangle droneBase = new Rectangle(50, 50);
-//            droneBase.setLayoutX(x);
-//            droneBase.setLayoutY(y);
-//            droneBase.setStyle("-fx-fill: #333333; -fx-stroke: black; -fx-stroke-width: 2;");
-//            dronePane.getChildren().add(droneBase);
-//
-//            // Label the drone base
-//            Label baseLabel = new Label("Drone Base");
-//            baseLabel.setLayoutX(x);
-//            baseLabel.setLayoutY(y + droneBase.getHeight() + 5); // Position below the rectangle
-//            dronePane.getChildren().add(baseLabel);
-//        }
-//    }
 
     @FXML
     private void onCropDataCollect() {
