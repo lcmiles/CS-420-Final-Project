@@ -150,14 +150,15 @@ public class DatabaseConnection {
         return dataList;
     }
 
-    // Insert item into the database (no recursion needed now)
     public static void insertItem(Item item) {
-        String sql = "INSERT INTO items (name, type, x, y) VALUES(?, ?, ?, ?)";
+        String sql = "INSERT INTO items (name, type, x, y, length, width) VALUES(?, ?, ?, ?, ?, ?)";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, item.getName());
             pstmt.setString(2, item.getType());
             pstmt.setDouble(3, item.getX());
             pstmt.setDouble(4, item.getY());
+            pstmt.setDouble(5, item.getLength());  // Insert length
+            pstmt.setDouble(6, item.getWidth());   // Insert width
             pstmt.executeUpdate();
             System.out.println("Item inserted: " + item.getName());
         } catch (SQLException e) {
@@ -166,20 +167,22 @@ public class DatabaseConnection {
     }
 
     // Edit an existing item
-// Edit an existing item
     public static void updateItem(Item item, String originalName) {
-        String sql = "UPDATE items SET name = ?, type = ?, x = ?, y = ? WHERE name = ?";
+        String sql = "UPDATE items SET name = ?, type = ?, x = ?, y = ?, length = ?, width = ? WHERE name = ?";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, item.getName()); // New name
             pstmt.setString(2, item.getType());
             pstmt.setDouble(3, item.getX());
             pstmt.setDouble(4, item.getY());
-            pstmt.setString(5, originalName); // Original name for WHERE clause
+            pstmt.setDouble(5, item.getLength());  // Update length
+            pstmt.setDouble(6, item.getWidth());   // Update width
+            pstmt.setString(7, originalName); // Original name for WHERE clause
             pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
+
 
 
     public static void deleteItem(String itemName) {
@@ -216,16 +219,23 @@ public class DatabaseConnection {
         }
     }
 
-    public static void removeContainedItem(String containerName, String itemName) {
-        String sql = "DELETE FROM contained_items WHERE container_name = ? AND item_name = ?";
+    // Method to check if an item name already exists in the database
+    public static boolean isItemNameTaken(String itemName) {
+        String sql = "SELECT COUNT(*) FROM items WHERE name = ?"; // Assuming 'items' is the table containing item data
+
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, containerName);
-            pstmt.setString(2, itemName);
-            pstmt.executeUpdate();
-            System.out.println("Removed item: " + itemName + " from container: " + containerName);
+            pstmt.setString(1, itemName); // Set the item name in the query
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                int count = rs.getInt(1); // Get the count of items with the same name
+                return count > 0; // Return true if count > 0 (meaning the name exists)
+            }
         } catch (SQLException e) {
-            System.err.println("Error removing contained item: " + e.getMessage());
+            System.out.println("Error checking item name: " + e.getMessage());
         }
+
+        return false; // Return false if no item with that name is found
     }
 
     public static List<Item> getItems() {
@@ -242,13 +252,15 @@ public class DatabaseConnection {
                 String type = rs.getString("type");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
+                double length = rs.getDouble("length");  // Fetch length
+                double width = rs.getDouble("width");    // Fetch width
 
-                // Create an item as usual
-                Item item = new Item(name, type, x, y);
+                // Create an item with length and width
+                Item item = new Item(name, type, x, y, length, width);
 
                 // Check if the item is a container
                 if (isContainer(name)) {
-                    Container container = new Container(name, type, x, y);
+                    Container container = new Container(name, type, x, y, length, width);
                     containerMap.put(name, container);  // Add the container to the map
                     items.add(container);  // Add the container to the list
                 } else {
@@ -292,7 +304,6 @@ public class DatabaseConnection {
         return false;
     }
 
-    // Get item by name from the database
     public static Item getItemByName(String name) {
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM items WHERE name = ?")) {
             pstmt.setString(1, name);
@@ -301,7 +312,9 @@ public class DatabaseConnection {
                 String type = rs.getString("type");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
-                return new Item(name, type, x, y) {
+                double length = rs.getDouble("length");  // Retrieve length
+                double width = rs.getDouble("width");    // Retrieve width
+                return new Item(name, type, x, y, length, width) {
                     @Override
                     public void saveToDatabase() {
                         insertItem(this); // Save to database
@@ -313,6 +326,47 @@ public class DatabaseConnection {
         }
         return null;
     }
+
+    public static Item getItemID(int id) {
+        try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM items WHERE id = ?")) {
+            pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                String name = rs.getString("name");
+                String type = rs.getString("type");
+                double x = rs.getDouble("x");
+                double y = rs.getDouble("y");
+                double length = rs.getDouble("length");  // Retrieve length
+                double width = rs.getDouble("width");    // Retrieve width
+                return new Item(name, type, x, y, length, width) {
+                    @Override
+                    public void saveToDatabase() {
+                        insertItem(this); // Save to database
+                    }
+                };
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
+    }
+
+    public static int getItemIDByName(String name) {
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement("SELECT id FROM items WHERE name = ?")) {
+
+            pstmt.setString(1, name);  // Bind the name to the query
+
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("id");  // Return the item ID
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return -1;  // Return -1 if no item with the given name is found
+    }
+
 
     // Get a list of all contained items (i.e., items that are part of containers)
     public static List<Item> getContainedItems() {
@@ -444,7 +498,9 @@ public class DatabaseConnection {
                         " name TEXT NOT NULL,\n" +
                         " type TEXT NOT NULL,\n" +
                         " x REAL NOT NULL,\n" +
-                        " y REAL NOT NULL\n" +
+                        " y REAL NOT NULL,\n" +
+                        " length REAL NOT NULL,\n" +
+                        " width REAL NOT NULL\n" +
                         ");";
                 conn.createStatement().execute(itemsSql);
                 // Create the crop_growth table

@@ -11,7 +11,10 @@
     <TextField fx:id="customItemTypeField" promptText="Enter custom item type" visible="false" />
     <TextField fx:id="xField" promptText="Enter X coordinate" />
     <TextField fx:id="yField" promptText="Enter Y coordinate" />
+    <TextField fx:id="lengthField" promptText="Enter length" />
+    <TextField fx:id="widthField" promptText="Enter width" />
     <CheckBox fx:id="containerCheckBox" text="Is Container" onAction="#onContainerCheckBoxChanged"/>
     <ListView fx:id="itemListView" disable="true" />
     <Button text="Save Item" onAction="#onCreateItem" />
+    <Button text="Cancel" onAction="#onCancel"/>
 </VBox>

@@ -6,8 +6,8 @@ import java.util.List;
 public class Container extends Item {
     private List<Item> containedItems;
 
-    public Container(String name, String type, double x, double y) {
-        super(name, type, x, y);
+    public Container(String name, String type, double x, double y, double length, double width) {
+        super(name, type, x, y, length, width);
         this.containedItems = new ArrayList<>();
     }
 
