@@ -169,9 +169,6 @@ public class ApplicationController {
             // Remove from TreeView
             itemTreeView.getRoot().getChildren().remove(selectedItem);
 
-            // Optionally remove from visual pane as well (call removeExistingVisual to remove both the rectangle and label)
-            removeExistingVisual(itemToDelete);
-
             // Refresh TreeView
             loadItemsIntoTree();  // Reload tree to reflect changes
 
@@ -232,8 +229,6 @@ public class ApplicationController {
 
                 // After the modal is closed, check if the item was updated
                 if (controller.isItemUpdated()) {
-
-                    removeExistingVisual(originalName);
 
                     loadItemsIntoTree();
 
