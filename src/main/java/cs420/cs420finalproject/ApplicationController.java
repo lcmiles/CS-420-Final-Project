@@ -264,7 +264,7 @@ public class ApplicationController {
                 double y = item.getY();
                 // Pass along existing visual representations
                 removeExistingVisual(item.getName());
-                loadItemNodeVisual(node, 0, x, y, containerMap);
+                loadItemNodeVisual(node, x, y, containerMap);
             }
         }
 
@@ -277,7 +277,7 @@ public class ApplicationController {
         }
     }
 
-    private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
+    private void loadItemNodeVisual(TreeItem<String> node, double offsetX, double offsetY, Map<String, Container> containerMap) {
         String itemName = node.getValue();
         Item item = DatabaseConnection.getItemByName(itemName);
         String itemType = item.getType();
@@ -326,10 +326,11 @@ public class ApplicationController {
 
             dronePane.getChildren().add(itemRect);
 
-            // Add label directly beneath the item
+            // Create label and position it inside the item
             Label itemLabel = new Label(itemName);
-            itemLabel.setLayoutX(offsetX);
-            itemLabel.setLayoutY(offsetY + itemRect.getHeight()); // Position label below the item
+            itemLabel.setLayoutX(offsetX); // Position label at the same X as item
+            itemLabel.setLayoutY(offsetY + itemRect.getHeight()); // Position label at the same Y as item
+
             dronePane.getChildren().add(itemLabel);
 
             // Bring label to the front
@@ -337,20 +338,18 @@ public class ApplicationController {
 
             // Apply styling based on item type
             if (itemType.equalsIgnoreCase("field")) {
-                itemRect.setViewOrder(1); // Ensure fields appear above containers
                 itemRect.setStyle("-fx-fill: green;");
                 fieldItems.add(itemRect); // Add to fieldItems list
             } else if (itemType.equalsIgnoreCase("pasture")) {
-                itemRect.setViewOrder(1); // Ensure pastures appear above containers
                 itemRect.setStyle("-fx-fill: #d8cc49;");
                 pastureItems.add(itemRect); // Add to pastureItems list
             }
 
-            // Add buffer space for the next item
-            offsetY += itemRect.getHeight() + 15; // Space based on item height
         } else {
-            // Handle container item
-            Rectangle containerRect = new Rectangle(length, width);
+            // Handle container item with size adjustments
+            double containerWidth = Math.max(width + 15, 50); // Increased width buffer
+            double containerLength = Math.max(length + 15, 50); // Increased height buffer
+            Rectangle containerRect = new Rectangle(containerWidth, containerLength);
             containerRect.setId(itemName); // Use item name as the unique ID
 
             // Apply container styles based on type
@@ -368,24 +367,48 @@ public class ApplicationController {
             containerRect.setLayoutY(offsetY);
             dronePane.getChildren().add(containerRect);
 
-            // Add label for the container directly beneath it
+            // Create label and position it inside the container
             Label containerLabel = new Label(itemName);
-            containerLabel.setLayoutX(offsetX);
-            containerLabel.setLayoutY(offsetY + containerRect.getHeight());
+            containerLabel.setLayoutX(offsetX + 5); // Position label at the same X as container
+            containerLabel.setLayoutY(offsetY); // Position label at the same Y as container
+
             dronePane.getChildren().add(containerLabel);
 
             // Send the label to the front
             containerLabel.toFront();
 
-            // Set container view order to be lower than contained items
-            containerRect.setViewOrder(0);
+            // Track the position of contained items
+            double containedOffsetX = offsetX + 20; // Increased horizontal buffer
+            double containedOffsetY = offsetY + 20; // Increased vertical buffer
+            int itemsInRow = 0;
+            double rowHeight = 0;
 
-            // Recursively load contained items within the container
-            double containedOffsetX = offsetX + 10;
-            double containedOffsetY = offsetY + 10;
+            // Keep track of occupied space inside the container
             for (TreeItem<String> child : node.getChildren()) {
-                loadItemNodeVisual(child, depth + 1, containedOffsetX, containedOffsetY, containerMap);
-                containedOffsetY += 15 + 50; // Adjusted buffer space
+                Item childItem = DatabaseConnection.getItemByName(child.getValue());
+                double childWidth = childItem.getWidth();
+                double childLength = childItem.getLength();
+
+                // Ensure no overlap by checking available space
+                if (containedOffsetX + childWidth > containerWidth) {
+                    // Move to next row if the item doesn't fit
+                    containedOffsetX = offsetX + 15; // Reset X position
+                    containedOffsetY += rowHeight + 20; // Add space for previous row
+                    rowHeight = 0; // Reset row height
+                }
+
+                // Position the child item
+                loadItemNodeVisual(child, containedOffsetX, containedOffsetY, containerMap);
+
+                // Update the occupied space
+                rowHeight = Math.max(rowHeight, childLength); // Track maximum height in the row
+                containedOffsetX += childWidth + 15; // Increased horizontal buffer
+
+                itemsInRow++;
+                if (itemsInRow % 3 == 0) {
+                    containedOffsetX = offsetX + 15; // Reset X position after 3 items
+                    containedOffsetY += 90; // Increased space for next row
+                }
             }
         }
     }
