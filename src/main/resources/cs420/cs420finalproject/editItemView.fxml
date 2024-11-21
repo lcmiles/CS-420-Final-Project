@@ -13,18 +13,8 @@
 <VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.EditItemController">
     <Label text="Edit Item" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
     <TextField fx:id="itemNameField" promptText="Enter item name" />
-    <ComboBox fx:id="itemTypeComboBox">
-        <items>
-            <FXCollections fx:factory="observableArrayList">
-                <String fx:value="field"/>
-                <String fx:value="pasture"/>
-                <String fx:value="drone"/>
-                <String fx:value="drone base"/>
-                <String fx:value="other"/>
-            </FXCollections>
-        </items>
-        <promptText>Choose item type</promptText>
-    </ComboBox>
+    <ComboBox fx:id="itemTypeComboBox" promptText="Select item type" />
+    <TextField fx:id="customItemTypeField" promptText="Enter custom item type" visible="false" />
     <TextField fx:id="xField" promptText="Enter X coordinate" />
     <TextField fx:id="yField" promptText="Enter Y coordinate" />
     <CheckBox fx:id="containerCheckBox" text="Is Container" onAction="#onContainerCheckBoxChanged"/>

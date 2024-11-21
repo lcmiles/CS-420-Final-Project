@@ -12,7 +12,7 @@ public class EditItemController {
     @FXML
     private TextField itemNameField;
     @FXML
-    private ComboBox<String> itemTypeComboBox;  // Changed to ComboBox for item type selection
+    private ComboBox<String> itemTypeComboBox;
     @FXML
     private TextField xField;
     @FXML
@@ -21,10 +21,30 @@ public class EditItemController {
     private CheckBox containerCheckBox;
     @FXML
     private ListView<Item> itemListView;
+    @FXML
+    private TextField customItemTypeField;
 
     private Item selectedItem;
     private Item itemBeingEdited;
     private Item updatedItem;
+
+    @FXML
+    public void initialize() {
+        // Initialize ComboBox with predefined options
+        itemTypeComboBox.getItems().addAll("field", "pasture", "drone", "drone base", "other");
+
+        // Add listener to show custom item type field when "Other" is selected
+        itemTypeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if ("other".equals(newValue)) {
+                customItemTypeField.setVisible(true);  // Show text field for custom input
+            } else {
+                customItemTypeField.setVisible(false);  // Hide text field if not "other"
+            }
+        });
+
+        // Prefill fields for editing
+        prefillFields(selectedItem);
+    }
 
     @FXML
     private void onSaveChanges() {
@@ -38,7 +58,14 @@ public class EditItemController {
 
         // Update basic properties
         selectedItem.setName(itemNameField.getText());
-        selectedItem.setType(itemTypeComboBox.getValue());  // Get the selected item type from the ComboBox
+
+        // Check if "Other" is selected and use the custom item type if needed
+        String itemType = itemTypeComboBox.getValue();
+        if ("other".equals(itemType)) {
+            itemType = customItemTypeField.getText();  // Use custom item type
+        }
+        selectedItem.setType(itemType);  // Set the selected or custom item type
+
         selectedItem.setX(Double.parseDouble(xField.getText()));
         selectedItem.setY(Double.parseDouble(yField.getText()));
 
@@ -148,6 +175,13 @@ public class EditItemController {
         } else {
             itemListView.setDisable(true); // Disable the ListView for non-containers
             itemListView.getItems().clear(); // Clear items for non-containers
+        }
+
+        if ("other".equals(item.getType())) {
+            customItemTypeField.setVisible(true);
+            customItemTypeField.setText(item.getType());
+        } else {
+            customItemTypeField.setVisible(false);
         }
     }
 

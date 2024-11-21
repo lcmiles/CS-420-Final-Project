@@ -247,7 +247,6 @@ public class ApplicationController {
         }
     }
 
-
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
         // Clear previous visual representations but retain drone, base, and labels
         dronePane.getChildren().removeIf(node ->
