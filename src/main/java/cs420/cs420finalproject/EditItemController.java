@@ -55,33 +55,62 @@ public class EditItemController {
     @FXML
     private void onSaveChanges() {
         if (selectedItem == null) {
-            System.out.println("Error: No item selected for update.");
+            showError("Error: No item selected for update.");
+            return;
+        }
+
+        // Check if the new name already exists in the database
+        String newItemName = itemNameField.getText();
+        if (newItemName.trim().isEmpty()) {
+            showError("Item name cannot be empty.");
+            return;  // Stop saving if name is empty
+        }
+
+        if (!newItemName.equals(selectedItem.getName()) && DatabaseConnection.isItemNameTaken(newItemName)) {
+            showError("Item name already taken. Please choose another name.");
+            return;  // Stop saving if name is taken
+        }
+
+        // Validate coordinates and dimensions
+        double x = 0, y = 0, length = 0, width = 0;
+        try {
+            x = Double.parseDouble(xField.getText());
+            y = Double.parseDouble(yField.getText());
+            length = Double.parseDouble(lengthField.getText());
+            width = Double.parseDouble(widthField.getText());
+        } catch (NumberFormatException e) {
+            showError("Invalid input. Coordinates and dimensions must be valid numbers.");
+            return;  // Stop saving if input is invalid
+        }
+
+        // Check if length and width are positive
+        if (length <= 0 || width <= 0) {
+            showError("Length and width must be positive values.");
+            return;
+        }
+
+        // Check if coordinates are within valid ranges (example ranges: 0 <= x, y <= 1000)
+        if (x < 0 || x > 1000 || y < 0 || y > 1000) {
+            showError("Coordinates must be within valid ranges (0 <= x, y <= 1000).");
             return;
         }
 
         // Store the original name before making changes
         String originalName = selectedItem.getName();
 
-        // Update basic properties
-        selectedItem.setName(itemNameField.getText());
-
-        // Check if "Other" is selected and use the custom item type if needed
+        // Update item properties
+        selectedItem.setName(newItemName);
         String itemType = itemTypeComboBox.getValue();
         if ("other".equals(itemType)) {
-            itemType = customItemTypeField.getText();  // Use custom item type
+            itemType = customItemTypeField.getText();
         }
-        selectedItem.setType(itemType);  // Set the selected or custom item type
-
-        // Set coordinates and dimensions
-        selectedItem.setX(Double.parseDouble(xField.getText()));
-        selectedItem.setY(Double.parseDouble(yField.getText()));
-
-        // Add length and width
-        selectedItem.setLength(Double.parseDouble(lengthField.getText()));
-        selectedItem.setWidth(Double.parseDouble(widthField.getText()));
+        selectedItem.setType(itemType);
+        selectedItem.setX(x);
+        selectedItem.setY(y);
+        selectedItem.setLength(length);
+        selectedItem.setWidth(width);
 
         if (containerCheckBox.isSelected()) {
-            // Convert to a container if it's not already one
             if (!(selectedItem instanceof Container)) {
                 selectedItem = new Container(
                         selectedItem.getName(),
@@ -92,46 +121,24 @@ public class EditItemController {
                         selectedItem.getWidth()
                 );
             }
-
-            // Add contained items to the container
             Container container = (Container) selectedItem;
-            container.getContainedItems().clear(); // Clear current contained items
+            container.getContainedItems().clear();
             for (Item selectedContainedItem : itemListView.getSelectionModel().getSelectedItems()) {
                 DatabaseConnection.insertContainedItem(container, selectedContainedItem);
             }
-        } else {
-            // Check if the item is in the contained_items table before attempting to remove it
-            List<Item> containedItems = DatabaseConnection.getContainedItemsForContainer(selectedItem);
-            for (Item containedItem : containedItems) {
-                if (containedItem.getName().equals(selectedItem.getName())) {
-                    // Remove the item from contained_items if it's found
-                    DatabaseConnection.removeContainedItem(selectedItem.getName(), containedItem.getName());
-                    break;
-                }
-            }
-
-            // Replace the container with a regular item
-            selectedItem = new Item(
-                    selectedItem.getName(),
-                    selectedItem.getType(),
-                    selectedItem.getX(),
-                    selectedItem.getY(),
-                    selectedItem.getLength(),
-                    selectedItem.getWidth()
-            );
-
-            // Ensure that the item no longer has any contained items
-            DatabaseConnection.deleteContainedItemsRelationships(originalName);
         }
 
-        // Update the item in the database, passing the original name
         DatabaseConnection.updateItem(selectedItem, originalName);
-
-        // Update the locally stored reference
         updatedItem = selectedItem;
-
-        // Close the popup window
         closePopup();
+    }
+
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     public void prefillFields(Item item) {
@@ -251,9 +258,5 @@ public class EditItemController {
     private void closePopup() {
         Stage stage = (Stage) itemNameField.getScene().getWindow();
         stage.close(); // Close the popup window
-    }
-
-    public void setSelectedItem(Item selectedItem) {
-        this.selectedItem = selectedItem;
     }
 }

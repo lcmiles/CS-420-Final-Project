@@ -1,12 +1,8 @@
 package cs420.cs420finalproject;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
-import javafx.scene.control.SelectionMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +70,14 @@ public class AddItemController {
     @FXML
     public void onCreateItem() {
         String itemName = itemNameField.getText();
+
+        // Check if the item name already exists in the database
+        if (DatabaseConnection.isItemNameTaken(itemName)) {
+            showError("Item name already taken. Please choose another name.");
+            return;  // Stop creation if name is taken
+        }
+
+        // Continue with item creation if the name is valid
         String itemType = itemTypeComboBox.getValue();
 
         if ("other".equals(itemType)) {
@@ -81,21 +85,35 @@ public class AddItemController {
         }
 
         double x = 0, y = 0, length = 0, width = 0;
+
+        // Validate coordinates and dimensions
         try {
             x = Double.parseDouble(xField.getText());
             y = Double.parseDouble(yField.getText());
-            length = Double.parseDouble(lengthField.getText());  // Get length
-            width = Double.parseDouble(widthField.getText());    // Get width
+            length = Double.parseDouble(lengthField.getText());
+            width = Double.parseDouble(widthField.getText());
         } catch (NumberFormatException e) {
-            System.out.println("Invalid coordinates or dimensions entered.");
+            showError("Invalid input. Coordinates and dimensions must be valid numbers.");
+            return;  // Stop creation if input is invalid
+        }
+
+        // Check if length and width are positive
+        if (length <= 0 || width <= 0) {
+            showError("Length and width must be positive values.");
+            return;
+        }
+
+        // Check if coordinates are within valid ranges (example ranges: 0 <= x, y <= 1000)
+        if (x < 0 || x > 1000 || y < 0 || y > 1000) {
+            showError("Coordinates must be within valid ranges (0 <= x, y <= 1000).");
             return;
         }
 
         boolean isContainer = containerCheckBox.isSelected();
         if (isContainer) {
-            newItem = new Container(itemName, itemType, x, y, length, width); // Pass length and width to Container constructor
+            newItem = new Container(itemName, itemType, x, y, length, width);
         } else {
-            newItem = new Item(itemName, itemType, x, y, length, width); // Pass length and width to Item constructor
+            newItem = new Item(itemName, itemType, x, y, length, width);
         }
 
         if (isContainer) {
@@ -107,9 +125,18 @@ public class AddItemController {
 
         itemCreated = true;
         System.out.println("Item created: " + newItem);
-
         closePopup();
     }
+
+
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
 
     @FXML
     private void onContainerCheckBoxChanged() {
@@ -127,6 +154,11 @@ public class AddItemController {
 
     public boolean isItemCreated() {
         return itemCreated;
+    }
+
+    @FXML
+    private void onCancel() {
+        closePopup(); // Close the edit window
     }
 
     private void closePopup() {

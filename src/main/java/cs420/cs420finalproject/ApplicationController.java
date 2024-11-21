@@ -280,33 +280,28 @@ public class ApplicationController {
     private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
         String itemName = node.getValue();
         Item item = DatabaseConnection.getItemByName(itemName);
-        Random rand = new Random();
-        String uniqueItemId = itemName + rand.nextInt(1000);
+        String itemType = item.getType();
 
         if (item == null) {
             return; // If item is null, skip this item
         }
 
-        String itemType = item.getType();
-        double length = item.getLength(); // Get length from the database
-        double width = item.getWidth(); // Get width from the database
-
-        // Check if the item has already been added
+        // Check if the item has already been added to prevent duplicates
         if (addedItems.contains(itemName)) {
             return; // Skip if already added
         }
 
-        // Mark the item as added
-        addedItems.add(itemName + uniqueItemId);
+        // Mark the item as added with its name (unique)
+        addedItems.add(itemName);
 
         // Remove any existing visual elements for the current item to prevent duplicates
         removeExistingVisual(itemName);
 
-        // Size adjustments based on length and width
-        double itemSizeX = width;
-        double itemSizeY = length;
+        // Size adjustments based on item length and width
+        double length = item.getLength();
+        double width = item.getWidth();
 
-        // Skip drone and drone base creation here, as they are handled separately
+        // Skip drone and drone base creation, as they are handled separately
         if (itemType.equalsIgnoreCase("drone")) {
             if (existingDrone == null) {
                 addDroneToPane(offsetX, offsetY);
@@ -321,49 +316,50 @@ public class ApplicationController {
 
         // Check if the current node has children. If it does, it's a container.
         if (node.getChildren().isEmpty()) {
-            // Load non-container item
+            // Load non-container item (Rectangle representation)
             Rectangle itemRect = createVisualItem(itemType);
             itemRect.setLayoutX(offsetX);
             itemRect.setLayoutY(offsetY);
-            itemRect.setWidth(itemSizeX);
-            itemRect.setHeight(itemSizeY);
-            itemRect.setId(itemType); // Assign the itemType as the ID for uniqueness
+            itemRect.setWidth(width);
+            itemRect.setHeight(length);
+            itemRect.setId(itemName); // Use item name as the unique ID
+
             dronePane.getChildren().add(itemRect);
 
-            // Add label immediately beneath the item
-            Label itemLabel = new Label(itemName + " (" + itemType + ")");
+            // Add label directly beneath the item
+            Label itemLabel = new Label(itemName);
             itemLabel.setLayoutX(offsetX);
-            itemLabel.setLayoutY(offsetY + itemRect.getHeight()); // Position directly below the item
+            itemLabel.setLayoutY(offsetY + itemRect.getHeight()); // Position label below the item
             dronePane.getChildren().add(itemLabel);
 
-            // Send the label to the front
+            // Bring label to the front
             itemLabel.toFront();
 
-            // Set a higher view order for contained items (to appear above containers)
+            // Apply styling based on item type
             if (itemType.equalsIgnoreCase("field")) {
                 itemRect.setViewOrder(1); // Ensure fields appear above containers
                 itemRect.setStyle("-fx-fill: green;");
-                fieldItems.add(itemRect); // Add field to the fieldItems list
+                fieldItems.add(itemRect); // Add to fieldItems list
             } else if (itemType.equalsIgnoreCase("pasture")) {
                 itemRect.setViewOrder(1); // Ensure pastures appear above containers
-                itemRect.setStyle("-fx-fill: #d8cc49;"); // Light green for pastures
-                pastureItems.add(itemRect); // Add pasture to the pastureItems list
+                itemRect.setStyle("-fx-fill: #d8cc49;");
+                pastureItems.add(itemRect); // Add to pastureItems list
             }
 
-            // Add buffer space for next item
-            offsetY += itemRect.getHeight() + 15; // Add space based on item height
+            // Add buffer space for the next item
+            offsetY += itemRect.getHeight() + 15; // Space based on item height
         } else {
-            // Load the container as a rectangle with fixed size based on length and width
-            Rectangle containerRect = new Rectangle(length, width); // Use the actual length and width for the container
-            containerRect.setId(itemType); // Assign the itemType as the ID for uniqueness
+            // Handle container item
+            Rectangle containerRect = new Rectangle(length, width);
+            containerRect.setId(itemName); // Use item name as the unique ID
 
-            // Style containers based on type
+            // Apply container styles based on type
             if (itemType.equalsIgnoreCase("field")) {
                 containerRect.setStyle("-fx-fill: green; -fx-stroke: black; -fx-stroke-width: 2;");
-                fieldItems.add(containerRect); // Add this container to the fieldItems list
+                fieldItems.add(containerRect); // Add to fieldItems list
             } else if (itemType.equalsIgnoreCase("pasture")) {
                 containerRect.setStyle("-fx-fill: #d8cc49; -fx-stroke: black; -fx-stroke-width: 2;");
-                pastureItems.add(containerRect); // Add this container to the pastureItems list
+                pastureItems.add(containerRect); // Add to pastureItems list
             } else {
                 containerRect.setStyle("-fx-fill: lightgray; -fx-stroke: black; -fx-stroke-width: 2;");
             }
@@ -372,16 +368,16 @@ public class ApplicationController {
             containerRect.setLayoutY(offsetY);
             dronePane.getChildren().add(containerRect);
 
-            // Add label immediately beneath the container
-            Label containerLabel = new Label(itemName + " (" + itemType + ")");
+            // Add label for the container directly beneath it
+            Label containerLabel = new Label(itemName);
             containerLabel.setLayoutX(offsetX);
-            containerLabel.setLayoutY(offsetY + containerRect.getHeight()); // Position directly below the container
+            containerLabel.setLayoutY(offsetY + containerRect.getHeight());
             dronePane.getChildren().add(containerLabel);
 
             // Send the label to the front
             containerLabel.toFront();
 
-            // Set a lower view order for the container (so contained items appear above it)
+            // Set container view order to be lower than contained items
             containerRect.setViewOrder(0);
 
             // Recursively load contained items within the container
@@ -389,31 +385,31 @@ public class ApplicationController {
             double containedOffsetY = offsetY + 10;
             for (TreeItem<String> child : node.getChildren()) {
                 loadItemNodeVisual(child, depth + 1, containedOffsetX, containedOffsetY, containerMap);
-                containedOffsetY += 15 + 50; // Adjusted buffer space between contained items (height + 20)
+                containedOffsetY += 15 + 50; // Adjusted buffer space
             }
         }
     }
 
     private void removeExistingVisual(String itemName) {
-        // Remove all visuals (rectangles, labels, circles for the drone)
+        // Remove all visuals (rectangles, labels, circles for the drone) based on item name
         dronePane.getChildren().removeIf(node -> {
             if (node instanceof Rectangle || node instanceof Circle) {
-                return node.getId() != null && node.getId().equals(itemName);
+                return node.getId() != null && node.getId().equals(itemName); // Remove by ID (unique to each item)
             } else if (node instanceof Label) {
                 Label label = (Label) node;
-                return label.getText().contains(itemName);
+                return label.getText().contains(itemName); // Match label by name
             }
-            return false;
+            return false; // Don't remove other nodes
         });
 
-        // Clear drone-specific visuals if the name matches
-        if (itemName.equalsIgnoreCase("drone")) {
+        // Clear drone-specific visuals if the item name contains "drone" or "drone base"
+        if (itemName.contains("drone")) {
             animatedDrone = null; // Clear reference
-        } else if (itemName.equalsIgnoreCase("drone base")) {
+        } else if (itemName.contains("drone base")) {
             droneBase = null; // Clear reference
         }
 
-        // Remove from lists
+        // Remove from lists based on item name
         fieldItems.removeIf(field -> field.getId() != null && field.getId().equals(itemName));
         pastureItems.removeIf(pasture -> pasture.getId() != null && pasture.getId().equals(itemName));
     }

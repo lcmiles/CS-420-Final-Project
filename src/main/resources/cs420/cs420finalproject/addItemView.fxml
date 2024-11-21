@@ -16,4 +16,5 @@
     <CheckBox fx:id="containerCheckBox" text="Is Container" onAction="#onContainerCheckBoxChanged"/>
     <ListView fx:id="itemListView" disable="true" />
     <Button text="Save Item" onAction="#onCreateItem" />
+    <Button text="Cancel" onAction="#onCancel"/>
 </VBox>
