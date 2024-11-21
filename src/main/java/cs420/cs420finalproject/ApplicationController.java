@@ -172,7 +172,8 @@ public class ApplicationController {
             // Refresh TreeView
             loadItemsIntoTree();  // Reload tree to reflect changes
 
-            // Optionally reload the visual representation
+            removeExistingVisual(itemToDelete);
+
             loadItemsIntoVisualPane(new HashMap<>());
 
             System.out.println("Item deleted successfully.");
