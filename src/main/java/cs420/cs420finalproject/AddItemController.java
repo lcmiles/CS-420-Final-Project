@@ -18,6 +18,8 @@ public class AddItemController {
     @FXML private TextField customItemTypeField;       // TextField for custom item type when "Other" is selected
     @FXML private TextField xField;
     @FXML private TextField yField;
+    @FXML private TextField lengthField;  // New field for length
+    @FXML private TextField widthField;   // New field for width
     @FXML private CheckBox containerCheckBox;
     @FXML private ListView<Item> itemListView;
     private Item newItem;
@@ -78,20 +80,22 @@ public class AddItemController {
             itemType = customItemTypeField.getText();  // Use custom type if "Other" is selected
         }
 
-        double x = 0, y = 0;
+        double x = 0, y = 0, length = 0, width = 0;
         try {
             x = Double.parseDouble(xField.getText());
             y = Double.parseDouble(yField.getText());
+            length = Double.parseDouble(lengthField.getText());  // Get length
+            width = Double.parseDouble(widthField.getText());    // Get width
         } catch (NumberFormatException e) {
-            System.out.println("Invalid coordinates entered.");
+            System.out.println("Invalid coordinates or dimensions entered.");
             return;
         }
 
         boolean isContainer = containerCheckBox.isSelected();
         if (isContainer) {
-            newItem = new Container(itemName, itemType, x, y);
+            newItem = new Container(itemName, itemType, x, y, length, width); // Pass length and width to Container constructor
         } else {
-            newItem = new Item(itemName, itemType, x, y);
+            newItem = new Item(itemName, itemType, x, y, length, width); // Pass length and width to Item constructor
         }
 
         if (isContainer) {

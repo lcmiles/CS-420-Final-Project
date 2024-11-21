@@ -19,11 +19,6 @@ public class MainApplication extends Application {
         instance = this;
     }
 
-    // Static method to access the singleton instance
-    public static MainApplication getInstance() {
-        return instance;
-    }
-
     @Override
     public void start(Stage stage) throws Exception {
         FXMLLoader fxmlLoader = new FXMLLoader(MainApplication.class.getResource("farmManagementView.fxml"));

@@ -3,6 +3,8 @@ package cs420.cs420finalproject;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+import javafx.collections.FXCollections;
+import javafx.scene.control.SelectionMode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +19,10 @@ public class EditItemController {
     private TextField xField;
     @FXML
     private TextField yField;
+    @FXML
+    private TextField lengthField;
+    @FXML
+    private TextField widthField;
     @FXML
     private CheckBox containerCheckBox;
     @FXML
@@ -66,8 +72,13 @@ public class EditItemController {
         }
         selectedItem.setType(itemType);  // Set the selected or custom item type
 
+        // Set coordinates and dimensions
         selectedItem.setX(Double.parseDouble(xField.getText()));
         selectedItem.setY(Double.parseDouble(yField.getText()));
+
+        // Add length and width
+        selectedItem.setLength(Double.parseDouble(lengthField.getText()));
+        selectedItem.setWidth(Double.parseDouble(widthField.getText()));
 
         if (containerCheckBox.isSelected()) {
             // Convert to a container if it's not already one
@@ -76,7 +87,9 @@ public class EditItemController {
                         selectedItem.getName(),
                         selectedItem.getType(),
                         selectedItem.getX(),
-                        selectedItem.getY()
+                        selectedItem.getY(),
+                        selectedItem.getLength(),
+                        selectedItem.getWidth()
                 );
             }
 
@@ -102,7 +115,9 @@ public class EditItemController {
                     selectedItem.getName(),
                     selectedItem.getType(),
                     selectedItem.getX(),
-                    selectedItem.getY()
+                    selectedItem.getY(),
+                    selectedItem.getLength(),
+                    selectedItem.getWidth()
             );
 
             // Ensure that the item no longer has any contained items
@@ -133,6 +148,8 @@ public class EditItemController {
         itemTypeComboBox.setValue(item.getType());  // Set the item type in the ComboBox
         xField.setText(String.valueOf(item.getX()));
         yField.setText(String.valueOf(item.getY()));
+        lengthField.setText(String.valueOf(item.getLength()));  // Prefill length
+        widthField.setText(String.valueOf(item.getWidth()));    // Prefill width
 
         // Check if the item is a container
         boolean isContainer = DatabaseConnection.isContainer(item.getName());
@@ -204,30 +221,14 @@ public class EditItemController {
         }
 
         List<Item> allItems = DatabaseConnection.getItems();
-        List<Item> containedItems = DatabaseConnection.getContainedItems();
-
-        List<Item> availableItems = new ArrayList<>();
-
-        // Iterate through all items to determine which ones should be available
+        List<Item> filteredItems = new ArrayList<>();
         for (Item item : allItems) {
-            // Skip the item that is currently being edited (itemBeingEdited)
-            if (item.equals(itemBeingEdited) || item.getName().equals(itemBeingEdited.getName())) {
-                continue;  // Skip items that have the same name or are the same item
-            }
-
-            // Check if the item is already contained in the selected item (container)
-            boolean isContained = containedItems.stream()
-                    .anyMatch(containedItem -> containedItem.equals(item));
-
-            // If the item is not already contained, add it to the available list
-            if (!isContained) {
-                availableItems.add(item);
+            if (!item.getName().equals(itemBeingEdited.getName())) {
+                filteredItems.add(item);
             }
         }
 
-        // Update the ListView with available items
-        itemListView.getItems().addAll(availableItems);
-        itemListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        itemListView.setItems(FXCollections.observableArrayList(filteredItems)); // Add items to ListView
     }
 
     public void setItemBeingEdited(Item item) {
@@ -242,13 +243,17 @@ public class EditItemController {
         return updatedItem != null;  // Checks if an updated item exists
     }
 
-    private void closePopup() {
-        Stage stage = (Stage) itemNameField.getScene().getWindow();
-        stage.close();
-    }
-
     @FXML
     private void onCancel() {
-        closePopup();
+        closePopup(); // Close the edit window
+    }
+
+    private void closePopup() {
+        Stage stage = (Stage) itemNameField.getScene().getWindow();
+        stage.close(); // Close the popup window
+    }
+
+    public void setSelectedItem(Item selectedItem) {
+        this.selectedItem = selectedItem;
     }
 }

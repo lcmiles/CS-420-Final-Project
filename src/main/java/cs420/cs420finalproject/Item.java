@@ -8,12 +8,16 @@ public class Item {
     private String type;
     private double x;
     private double y;
+    private double length;
+    private double width;
 
-    public Item(String name, String type, double x, double y) {
+    public Item(String name, String type, double x, double y, double length, double width) {
         this.name = name;
         this.type = type;
         this.x = x;
         this.y = y;
+        this.length = length;
+        this.width = width;
     }
 
     public void setName(String name) {
@@ -46,6 +50,22 @@ public class Item {
 
     public void setY(double y) {
         this.y = y;
+    }
+
+    public double getLength() {
+        return length;
+    }
+
+    public void setLength(double length) {
+        this.length = length;
+    }
+
+    public double getWidth() {
+        return width;
+    }
+
+    public void setWidth(double width) {
+        this.width = width;
     }
 
     @Override

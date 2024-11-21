@@ -150,14 +150,15 @@ public class DatabaseConnection {
         return dataList;
     }
 
-    // Insert item into the database (no recursion needed now)
     public static void insertItem(Item item) {
-        String sql = "INSERT INTO items (name, type, x, y) VALUES(?, ?, ?, ?)";
+        String sql = "INSERT INTO items (name, type, x, y, length, width) VALUES(?, ?, ?, ?, ?, ?)";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, item.getName());
             pstmt.setString(2, item.getType());
             pstmt.setDouble(3, item.getX());
             pstmt.setDouble(4, item.getY());
+            pstmt.setDouble(5, item.getLength());  // Insert length
+            pstmt.setDouble(6, item.getWidth());   // Insert width
             pstmt.executeUpdate();
             System.out.println("Item inserted: " + item.getName());
         } catch (SQLException e) {
@@ -166,20 +167,22 @@ public class DatabaseConnection {
     }
 
     // Edit an existing item
-// Edit an existing item
     public static void updateItem(Item item, String originalName) {
-        String sql = "UPDATE items SET name = ?, type = ?, x = ?, y = ? WHERE name = ?";
+        String sql = "UPDATE items SET name = ?, type = ?, x = ?, y = ?, length = ?, width = ? WHERE name = ?";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, item.getName()); // New name
             pstmt.setString(2, item.getType());
             pstmt.setDouble(3, item.getX());
             pstmt.setDouble(4, item.getY());
-            pstmt.setString(5, originalName); // Original name for WHERE clause
+            pstmt.setDouble(5, item.getLength());  // Update length
+            pstmt.setDouble(6, item.getWidth());   // Update width
+            pstmt.setString(7, originalName); // Original name for WHERE clause
             pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
+
 
 
     public static void deleteItem(String itemName) {
@@ -242,13 +245,15 @@ public class DatabaseConnection {
                 String type = rs.getString("type");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
+                double length = rs.getDouble("length");  // Fetch length
+                double width = rs.getDouble("width");    // Fetch width
 
-                // Create an item as usual
-                Item item = new Item(name, type, x, y);
+                // Create an item with length and width
+                Item item = new Item(name, type, x, y, length, width);
 
                 // Check if the item is a container
                 if (isContainer(name)) {
-                    Container container = new Container(name, type, x, y);
+                    Container container = new Container(name, type, x, y, length, width);
                     containerMap.put(name, container);  // Add the container to the map
                     items.add(container);  // Add the container to the list
                 } else {
@@ -292,7 +297,6 @@ public class DatabaseConnection {
         return false;
     }
 
-    // Get item by name from the database
     public static Item getItemByName(String name) {
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement("SELECT * FROM items WHERE name = ?")) {
             pstmt.setString(1, name);
@@ -301,7 +305,9 @@ public class DatabaseConnection {
                 String type = rs.getString("type");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
-                return new Item(name, type, x, y) {
+                double length = rs.getDouble("length");  // Retrieve length
+                double width = rs.getDouble("width");    // Retrieve width
+                return new Item(name, type, x, y, length, width) {
                     @Override
                     public void saveToDatabase() {
                         insertItem(this); // Save to database
@@ -444,7 +450,9 @@ public class DatabaseConnection {
                         " name TEXT NOT NULL,\n" +
                         " type TEXT NOT NULL,\n" +
                         " x REAL NOT NULL,\n" +
-                        " y REAL NOT NULL\n" +
+                        " y REAL NOT NULL,\n" +
+                        " length REAL NOT NULL,\n" +
+                        " width REAL NOT NULL\n" +
                         ");";
                 conn.createStatement().execute(itemsSql);
                 // Create the crop_growth table

@@ -250,8 +250,7 @@ public class ApplicationController {
 
     private void loadItemsIntoVisualPane(Map<String, Container> containerMap) {
         // Clear previous visual representations but retain drone, base, and labels
-        dronePane.getChildren().removeIf(node ->
-                !(node == animatedDrone || node == droneBase || node instanceof Label));
+        dronePane.getChildren().removeIf(node -> !(node == animatedDrone || node == droneBase || node instanceof Label));
 
         // Reset the tracking set
         addedItems.clear();
@@ -279,9 +278,16 @@ public class ApplicationController {
     }
 
     private void loadItemNodeVisual(TreeItem<String> node, int depth, double offsetX, double offsetY, Map<String, Container> containerMap) {
-
         String itemName = node.getValue();
-        String itemType = DatabaseConnection.getItemByName(itemName).getType();
+        Item item = DatabaseConnection.getItemByName(itemName);
+
+        if (item == null) {
+            return; // If item is null, skip this item
+        }
+
+        String itemType = item.getType();
+        double length = item.getLength(); // Get length from the database
+        double width = item.getWidth(); // Get width from the database
 
         // Check if the item has already been added
         if (addedItems.contains(itemName)) {
@@ -294,16 +300,12 @@ public class ApplicationController {
         // Remove any existing visual elements for the current item to prevent duplicates
         removeExistingVisual(itemName);
 
-        // Calculate size based on depth, where top-level containers are larger
-        double sizeFactor = 1 + (0.2 * (3 - depth)); // Scale factor that decreases with depth
-        double containerSize = 100 * sizeFactor; // Adjust container size for depth
+        // Size adjustments based on length and width
+        double containerSize = length * 1.5; // Adjust size for containers based on length and width
+        double itemSizeX = width;
+        double itemSizeY = length;
 
-        // Ensure that top-level containers are larger than inner containers
-        if (depth == 0) {
-            containerSize *= 1.5; // Increase size for the outermost container
-        }
-
-// Skip drone and drone base creation here, as they are handled separately
+        // Skip drone and drone base creation here, as they are handled separately
         if (itemType.equalsIgnoreCase("drone")) {
             if (existingDrone == null) {
                 addDroneToPane(offsetX, offsetY);
@@ -311,7 +313,7 @@ public class ApplicationController {
             return; // Return early since the drone is already added
         } else if (itemType.equalsIgnoreCase("drone base")) {
             if (existingDroneBase == null) {
-                addDroneBase(offsetX,offsetY,itemName);
+                addDroneBase(offsetX, offsetY, itemName);
             }
             return; // Return early since the drone base is already added
         }
@@ -322,6 +324,8 @@ public class ApplicationController {
             Rectangle itemRect = createVisualItem(itemType);
             itemRect.setLayoutX(offsetX);
             itemRect.setLayoutY(offsetY);
+            itemRect.setWidth(itemSizeX);
+            itemRect.setHeight(itemSizeY);
             itemRect.setId(itemType); // Assign the itemType as the ID for uniqueness
             dronePane.getChildren().add(itemRect);
 
@@ -348,16 +352,15 @@ public class ApplicationController {
             // Add buffer space for next item
             offsetY += itemRect.getHeight() + 15; // Add space based on item height
         } else {
-            // Load the container as a rectangle with adjusted size based on depth
-            Rectangle containerRect = new Rectangle(containerSize, containerSize); // Size adjusted for depth
+            // Load the container as a rectangle with adjusted size based on length and width
+            Rectangle containerRect = new Rectangle(length, width); // Use the actual length and width for the container
             containerRect.setId(itemType); // Assign the itemType as the ID for uniqueness
 
-            // If this container is a "field", make it green
+            // Style containers based on type
             if (itemType.equalsIgnoreCase("field")) {
                 containerRect.setStyle("-fx-fill: green; -fx-stroke: black; -fx-stroke-width: 2;");
                 fieldItems.add(containerRect); // Add this container to the fieldItems list
             } else if (itemType.equalsIgnoreCase("pasture")) {
-                // If this is a pasture, make it light green
                 containerRect.setStyle("-fx-fill: #d8cc49; -fx-stroke: black; -fx-stroke-width: 2;");
                 pastureItems.add(containerRect); // Add this container to the pastureItems list
             } else {
@@ -371,6 +374,7 @@ public class ApplicationController {
             // Add label immediately beneath the container
             Label containerLabel = new Label(itemName + " (" + itemType + ")");
             containerLabel.setLayoutX(offsetX);
+            containerLabel.setLayoutY(offsetY + containerRect.getHeight()); // Position directly below the container
             dronePane.getChildren().add(containerLabel);
 
             // Send the label to the front
@@ -380,7 +384,7 @@ public class ApplicationController {
             containerRect.setViewOrder(0);
 
             // Track the container's height as we add items
-            double containerHeight = containerSize;
+            double containerHeight = containerRect.getHeight();
 
             // Recursively load contained items within the container
             double containedOffsetX = offsetX + 10;
