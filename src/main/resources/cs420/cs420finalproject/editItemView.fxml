@@ -1,26 +1,153 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ComboBox?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.control.CheckBox?>
-<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.control.ListCell?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
 
-<?import javafx.collections.FXCollections?>
-<?import java.lang.String?>
-<VBox xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.EditItemController">
-    <Label text="Edit Item" style="-fx-font-size: 16px; -fx-font-weight: bold;" />
-    <TextField fx:id="itemNameField" promptText="Enter item name" />
-    <ComboBox fx:id="itemTypeComboBox" promptText="Select item type" />
-    <TextField fx:id="customItemTypeField" promptText="Enter custom item type" visible="false" />
-    <TextField fx:id="xField" promptText="Enter X coordinate" />
-    <TextField fx:id="yField" promptText="Enter Y coordinate" />
-    <TextField fx:id="lengthField" promptText="Enter length" />
-    <TextField fx:id="widthField" promptText="Enter width" />
-    <CheckBox fx:id="containerCheckBox" text="Is Container" onAction="#onContainerCheckBoxChanged"/>
-    <ListView fx:id="itemListView" disable="true" />
-    <Button text="Save Changes" onAction="#onSaveChanges"/>
-    <Button text="Cancel" onAction="#onCancel"/>
+<VBox prefHeight="759.0" prefWidth="404.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cs420.cs420finalproject.EditItemController">
+    <HBox alignment="CENTER_LEFT" prefHeight="70.0" prefWidth="404.0">
+        <children>
+            <Label prefHeight="17.0" prefWidth="87.0" text="Name:" HBox.hgrow="ALWAYS">
+                <HBox.margin>
+                    <Insets left="10.0" right="10.0" />
+                </HBox.margin>
+                <font>
+                    <Font size="14.0" />
+                </font>
+            </Label>
+            <TextField fx:id="itemNameField" prefHeight="25.0" prefWidth="367.0" promptText="Enter item name" HBox.hgrow="ALWAYS">
+                <HBox.margin>
+                    <Insets left="10.0" right="10.0" />
+                </HBox.margin>
+            </TextField>
+        </children>
+    </HBox>
+    <Label prefHeight="17.0" prefWidth="87.0" text="Type:">
+        <font>
+            <Font size="14.0" />
+        </font>
+        <VBox.margin>
+            <Insets left="10.0" right="10.0" top="10.0" />
+        </VBox.margin>
+    </Label>
+    <ComboBox fx:id="itemTypeComboBox" promptText="Select item type">
+        <VBox.margin>
+            <Insets left="10.0" right="10.0" top="10.0" />
+        </VBox.margin>
+    </ComboBox>
+    <TextField fx:id="customItemTypeField" prefHeight="25.0" prefWidth="326.0" promptText="Enter custom item type" visible="false">
+        <VBox.margin>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+        </VBox.margin>
+    </TextField>
+    <HBox alignment="CENTER_LEFT" prefHeight="60.0" prefWidth="404.0" VBox.vgrow="ALWAYS">
+        <children>
+            <Label prefHeight="30.0" prefWidth="270.0" text="Price:">
+                <font>
+                    <Font size="14.0" />
+                </font>
+                <padding>
+                    <Insets left="10.0" right="10.0" />
+                </padding>
+            </Label>
+            <TextField fx:id="priceField" prefHeight="25.0" prefWidth="116.0" promptText="Enter item price" HBox.hgrow="ALWAYS">
+                <HBox.margin>
+                    <Insets left="10.0" right="10.0" />
+                </HBox.margin>
+            </TextField>
+        </children>
+    </HBox>
+    <HBox alignment="CENTER_LEFT" prefHeight="66.0" prefWidth="404.0" VBox.vgrow="ALWAYS">
+        <children>
+            <Label prefHeight="30.0" prefWidth="355.0" text="X-Coordinates:">
+                <font>
+                    <Font size="14.0" />
+                </font>
+                <padding>
+                    <Insets left="10.0" right="10.0" />
+                </padding>
+            </Label>
+            <TextField fx:id="xField" prefHeight="25.0" prefWidth="198.0" promptText="Enter X coordinate" HBox.hgrow="ALWAYS">
+                <HBox.margin>
+                    <Insets left="10.0" right="10.0" />
+                </HBox.margin>
+            </TextField>
+        </children>
+    </HBox>
+    <HBox alignment="CENTER" prefHeight="63.0" prefWidth="404.0" VBox.vgrow="ALWAYS">
+        <children>
+            <Label prefHeight="30.0" prefWidth="309.0" text="Y-Coordinates:">
+                <font>
+                    <Font size="14.0" />
+                </font>
+                <padding>
+                    <Insets left="10.0" right="10.0" />
+                </padding>
+            </Label>
+            <TextField fx:id="yField" prefHeight="25.0" prefWidth="150.0" promptText="Enter Y coordinate" HBox.hgrow="ALWAYS">
+                <HBox.margin>
+                    <Insets left="10.0" right="10.0" />
+                </HBox.margin>
+            </TextField>
+        </children>
+    </HBox>
+    <HBox alignment="CENTER" prefHeight="63.0" prefWidth="404.0" VBox.vgrow="ALWAYS">
+        <children>
+            <Label prefHeight="30.0" prefWidth="309.0" text="Length:">
+                <font>
+                    <Font size="14.0" />
+                </font>
+                <padding>
+                    <Insets left="10.0" right="10.0" />
+                </padding>
+            </Label>
+            <TextField fx:id="lengthField" promptText="Enter length">
+                <HBox.margin>
+                    <Insets left="10.0" right="10.0" />
+                </HBox.margin>
+            </TextField>
+        </children>
+    </HBox>
+    <HBox alignment="CENTER" prefHeight="62.0" prefWidth="404.0" VBox.vgrow="ALWAYS">
+        <children>
+            <Label prefHeight="30.0" prefWidth="309.0" text="Width:">
+                <font>
+                    <Font size="14.0" />
+                </font>
+                <padding>
+                    <Insets left="10.0" right="10.0" />
+                </padding>
+            </Label>
+            <TextField fx:id="widthField" promptText="Enter width">
+                <HBox.margin>
+                    <Insets left="10.0" right="10.0" />
+                </HBox.margin>
+            </TextField>
+        </children>
+    </HBox>
+    <CheckBox fx:id="containerCheckBox" onAction="#onContainerCheckBoxChanged" text="Is Container">
+        <VBox.margin>
+            <Insets left="10.0" right="10.0" top="10.0" />
+        </VBox.margin>
+    </CheckBox>
+    <ListView fx:id="itemListView" disable="true">
+        <VBox.margin>
+            <Insets left="10.0" right="10.0" top="10.0" />
+        </VBox.margin>
+    </ListView>
+    <HBox alignment="CENTER" prefHeight="100.0" prefWidth="404.0" spacing="10.0" VBox.vgrow="ALWAYS">
+        <children>
+            <Button onAction="#onCancel" text="Cancel" />
+            <Button onAction="#onSaveChanges" text="Save Changes" />
+        </children>
+        <padding>
+            <Insets left="10.0" right="10.0" />
+        </padding>
+    </HBox>
 </VBox>
