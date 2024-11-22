@@ -27,6 +27,7 @@ public class ApplicationController {
 
     @FXML private Label statusLabel;
     @FXML private TextArea logs;
+    @FXML private TextArea itemDetails;
     @FXML private Pane dronePane;
     private Circle animatedDrone;
     private Rectangle droneBase;
@@ -82,10 +83,35 @@ public class ApplicationController {
             // Enable Edit/Delete buttons
             editButton.setDisable(false);
             deleteButton.setDisable(false);
+
+            // Populate item details into TextArea
+            String itemName = selectedItem.getValue();
+            Item item = DatabaseConnection.getItemByName(itemName); // A helper method to locate the item by name
+            if (item != null) {
+                StringBuilder details = new StringBuilder();
+                details.append("Name: ").append(item.getName()).append("\n")
+                        .append("Type: ").append(item.getType()).append("\n")
+                        .append("Price: $").append(String.format("%.2f", item.getPrice())).append("\n")
+                        .append("Position: (").append(item.getX()).append(", ").append(item.getY()).append(")\n")
+                        .append("Dimensions: ").append(item.getLength()).append(" x ").append(item.getWidth()).append("\n");
+
+                if (item instanceof Container) {
+                    Container container = (Container) item;
+                    details.append("Contained Items:\n");
+                    for (Item containedItem : container.getContainedItems()) {
+                        details.append("- ").append(containedItem.getName()).append("\n");
+                    }
+                }
+
+                itemDetails.setText(details.toString());
+            } else {
+                itemDetails.setText("Item details not found.");
+            }
         } else {
             // Disable buttons when no item is selected
             editButton.setDisable(true);
             deleteButton.setDisable(true);
+            itemDetails.clear(); // Clear the TextArea
         }
     }
 

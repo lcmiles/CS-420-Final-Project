@@ -11,24 +11,16 @@ import java.util.List;
 
 public class EditItemController {
 
-    @FXML
-    private TextField itemNameField;
-    @FXML
-    private ComboBox<String> itemTypeComboBox;
-    @FXML
-    private TextField xField;
-    @FXML
-    private TextField yField;
-    @FXML
-    private TextField lengthField;
-    @FXML
-    private TextField widthField;
-    @FXML
-    private CheckBox containerCheckBox;
-    @FXML
-    private ListView<Item> itemListView;
-    @FXML
-    private TextField customItemTypeField;
+    @FXML private TextField itemNameField;
+    @FXML private ComboBox<String> itemTypeComboBox;
+    @FXML private TextField priceField;
+    @FXML private TextField xField;
+    @FXML private TextField yField;
+    @FXML private TextField lengthField;
+    @FXML private TextField widthField;
+    @FXML private CheckBox containerCheckBox;
+    @FXML private ListView<Item> itemListView;
+    @FXML private TextField customItemTypeField;
 
     private Item selectedItem;
     private Item itemBeingEdited;
@@ -72,8 +64,9 @@ public class EditItemController {
         }
 
         // Validate coordinates and dimensions
-        double x = 0, y = 0, length = 0, width = 0;
+        double price = 0, x = 0, y = 0, length = 0, width = 0;
         try {
+            price = Double.parseDouble(priceField.getText());
             x = Double.parseDouble(xField.getText());
             y = Double.parseDouble(yField.getText());
             length = Double.parseDouble(lengthField.getText());
@@ -105,6 +98,7 @@ public class EditItemController {
             itemType = customItemTypeField.getText();
         }
         selectedItem.setType(itemType);
+        selectedItem.setPrice(price);
         selectedItem.setX(x);
         selectedItem.setY(y);
         selectedItem.setLength(length);
@@ -115,6 +109,7 @@ public class EditItemController {
                 selectedItem = new Container(
                         selectedItem.getName(),
                         selectedItem.getType(),
+                        selectedItem.getPrice(),
                         selectedItem.getX(),
                         selectedItem.getY(),
                         selectedItem.getLength(),
@@ -153,6 +148,7 @@ public class EditItemController {
         // Prefill basic fields
         itemNameField.setText(item.getName());
         itemTypeComboBox.setValue(item.getType());  // Set the item type in the ComboBox
+        priceField.setText(String.valueOf(item.getPrice()));
         xField.setText(String.valueOf(item.getX()));
         yField.setText(String.valueOf(item.getY()));
         lengthField.setText(String.valueOf(item.getLength()));  // Prefill length

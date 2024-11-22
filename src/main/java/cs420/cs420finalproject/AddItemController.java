@@ -10,36 +10,29 @@ import java.util.List;
 public class AddItemController {
 
     @FXML private TextField itemNameField;
-    @FXML private ComboBox<String> itemTypeComboBox;  // Use ComboBox instead of TextField for item type
-    @FXML private TextField customItemTypeField;       // TextField for custom item type when "Other" is selected
+    @FXML private ComboBox<String> itemTypeComboBox;
+    @FXML private TextField customItemTypeField;
     @FXML private TextField xField;
     @FXML private TextField yField;
-    @FXML private TextField lengthField;  // New field for length
-    @FXML private TextField widthField;   // New field for width
+    @FXML private TextField lengthField;
+    @FXML private TextField widthField;
+    @FXML private TextField priceField;  // New field for price
     @FXML private CheckBox containerCheckBox;
     @FXML private ListView<Item> itemListView;
+
     private Item newItem;
     private boolean itemCreated = false;
 
     @FXML
     public void initialize() {
-        // Initialize ComboBox with predefined options
         itemTypeComboBox.getItems().addAll("field", "pasture", "drone", "drone base", "other");
-        itemTypeComboBox.getSelectionModel().selectFirst();  // Select the first option by default
-
-        // Hide the custom item type field initially
+        itemTypeComboBox.getSelectionModel().selectFirst();
         customItemTypeField.setVisible(false);
 
-        // Add listener to show custom item type field when "Other" is selected
         itemTypeComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if ("other".equals(newValue)) {
-                customItemTypeField.setVisible(true);  // Show text field for custom input
-            } else {
-                customItemTypeField.setVisible(false);  // Hide text field if not "other"
-            }
+            customItemTypeField.setVisible("other".equals(newValue));
         });
 
-        // Populate the ListView with items from the database
         loadItemsIntoListView();
     }
 
@@ -51,13 +44,8 @@ public class AddItemController {
         List<Item> availableItems = new ArrayList<>();
 
         for (Item item : allItems) {
-            boolean alreadyContained = false;
-            for (Item containedItem : containedItems) {
-                if (item.hashCode() == containedItem.hashCode()) {
-                    alreadyContained = true;
-                    break;
-                }
-            }
+            boolean alreadyContained = containedItems.stream()
+                    .anyMatch(containedItem -> item.hashCode() == containedItem.hashCode());
             if (!alreadyContained) {
                 availableItems.add(item);
             }
@@ -71,39 +59,33 @@ public class AddItemController {
     public void onCreateItem() {
         String itemName = itemNameField.getText();
 
-        // Check if the item name already exists in the database
         if (DatabaseConnection.isItemNameTaken(itemName)) {
             showError("Item name already taken. Please choose another name.");
-            return;  // Stop creation if name is taken
+            return;
         }
 
-        // Continue with item creation if the name is valid
         String itemType = itemTypeComboBox.getValue();
-
         if ("other".equals(itemType)) {
-            itemType = customItemTypeField.getText();  // Use custom type if "Other" is selected
+            itemType = customItemTypeField.getText();
         }
 
-        double x = 0, y = 0, length = 0, width = 0;
-
-        // Validate coordinates and dimensions
+        double x, y, length, width, price;
         try {
             x = Double.parseDouble(xField.getText());
             y = Double.parseDouble(yField.getText());
             length = Double.parseDouble(lengthField.getText());
             width = Double.parseDouble(widthField.getText());
+            price = Double.parseDouble(priceField.getText());  // Parse the price input
         } catch (NumberFormatException e) {
-            showError("Invalid input. Coordinates and dimensions must be valid numbers.");
-            return;  // Stop creation if input is invalid
-        }
-
-        // Check if length and width are positive
-        if (length <= 0 || width <= 0) {
-            showError("Length and width must be positive values.");
+            showError("Invalid input. Coordinates, dimensions, and price must be valid numbers.");
             return;
         }
 
-        // Check if coordinates are within valid ranges (example ranges: 0 <= x, y <= 1000)
+        if (length <= 0 || width <= 0 || price < 0) {
+            showError("Length, width, and price must be positive values.");
+            return;
+        }
+
         if (x < 0 || x > 1000 || y < 0 || y > 1000) {
             showError("Coordinates must be within valid ranges (0 <= x, y <= 1000).");
             return;
@@ -111,9 +93,9 @@ public class AddItemController {
 
         boolean isContainer = containerCheckBox.isSelected();
         if (isContainer) {
-            newItem = new Container(itemName, itemType, x, y, length, width);
+            newItem = new Container(itemName, itemType, price, x, y, length, width);
         } else {
-            newItem = new Item(itemName, itemType, x, y, length, width);
+            newItem = new Item(itemName, itemType, price, x, y, length, width);
         }
 
         if (isContainer) {
@@ -128,7 +110,6 @@ public class AddItemController {
         closePopup();
     }
 
-
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
@@ -137,14 +118,11 @@ public class AddItemController {
         alert.showAndWait();
     }
 
-
     @FXML
     private void onContainerCheckBoxChanged() {
+        itemListView.setDisable(!containerCheckBox.isSelected());
         if (containerCheckBox.isSelected()) {
-            itemListView.setDisable(false);
             loadItemsIntoListView();
-        } else {
-            itemListView.setDisable(true);
         }
     }
 
@@ -158,7 +136,7 @@ public class AddItemController {
 
     @FXML
     private void onCancel() {
-        closePopup(); // Close the edit window
+        closePopup();
     }
 
     private void closePopup() {

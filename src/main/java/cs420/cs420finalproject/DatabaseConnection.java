@@ -151,14 +151,15 @@ public class DatabaseConnection {
     }
 
     public static void insertItem(Item item) {
-        String sql = "INSERT INTO items (name, type, x, y, length, width) VALUES(?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (name, type, x, y, length, width, price) VALUES(?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, item.getName());
             pstmt.setString(2, item.getType());
             pstmt.setDouble(3, item.getX());
             pstmt.setDouble(4, item.getY());
-            pstmt.setDouble(5, item.getLength());  // Insert length
-            pstmt.setDouble(6, item.getWidth());   // Insert width
+            pstmt.setDouble(5, item.getLength());
+            pstmt.setDouble(6, item.getWidth());
+            pstmt.setDouble(7, item.getPrice()); // Insert price
             pstmt.executeUpdate();
             System.out.println("Item inserted: " + item.getName());
         } catch (SQLException e) {
@@ -168,22 +169,21 @@ public class DatabaseConnection {
 
     // Edit an existing item
     public static void updateItem(Item item, String originalName) {
-        String sql = "UPDATE items SET name = ?, type = ?, x = ?, y = ?, length = ?, width = ? WHERE name = ?";
+        String sql = "UPDATE items SET name = ?, type = ?, x = ?, y = ?, length = ?, width = ?, price = ? WHERE name = ?";
         try (Connection conn = connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, item.getName()); // New name
+            pstmt.setString(1, item.getName());
             pstmt.setString(2, item.getType());
             pstmt.setDouble(3, item.getX());
             pstmt.setDouble(4, item.getY());
-            pstmt.setDouble(5, item.getLength());  // Update length
-            pstmt.setDouble(6, item.getWidth());   // Update width
-            pstmt.setString(7, originalName); // Original name for WHERE clause
+            pstmt.setDouble(5, item.getLength());
+            pstmt.setDouble(6, item.getWidth());
+            pstmt.setDouble(7, item.getPrice()); // Update price
+            pstmt.setString(8, originalName);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
         }
     }
-
-
 
     public static void deleteItem(String itemName) {
         String sql = "DELETE FROM items WHERE name = ?";
@@ -250,17 +250,18 @@ public class DatabaseConnection {
             while (rs.next()) {
                 String name = rs.getString("name");
                 String type = rs.getString("type");
+                double price = rs.getDouble("price");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
                 double length = rs.getDouble("length");  // Fetch length
                 double width = rs.getDouble("width");    // Fetch width
 
                 // Create an item with length and width
-                Item item = new Item(name, type, x, y, length, width);
+                Item item = new Item(name, type, price, x, y, length, width);
 
                 // Check if the item is a container
                 if (isContainer(name)) {
-                    Container container = new Container(name, type, x, y, length, width);
+                    Container container = new Container(name, type, price, x, y, length, width);
                     containerMap.put(name, container);  // Add the container to the map
                     items.add(container);  // Add the container to the list
                 } else {
@@ -310,11 +311,12 @@ public class DatabaseConnection {
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 String type = rs.getString("type");
+                double price = rs.getDouble("price");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
                 double length = rs.getDouble("length");  // Retrieve length
                 double width = rs.getDouble("width");    // Retrieve width
-                return new Item(name, type, x, y, length, width) {
+                return new Item(name, type, price, x, y, length, width) {
                     @Override
                     public void saveToDatabase() {
                         insertItem(this); // Save to database
@@ -334,11 +336,12 @@ public class DatabaseConnection {
             if (rs.next()) {
                 String name = rs.getString("name");
                 String type = rs.getString("type");
+                double price = rs.getDouble("price");
                 double x = rs.getDouble("x");
                 double y = rs.getDouble("y");
                 double length = rs.getDouble("length");  // Retrieve length
                 double width = rs.getDouble("width");    // Retrieve width
-                return new Item(name, type, x, y, length, width) {
+                return new Item(name, type, price, x, y, length, width) {
                     @Override
                     public void saveToDatabase() {
                         insertItem(this); // Save to database
@@ -497,6 +500,7 @@ public class DatabaseConnection {
                         " id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
                         " name TEXT NOT NULL,\n" +
                         " type TEXT NOT NULL,\n" +
+                        " price REAL DEFAULT 0.0,\n" +
                         " x REAL NOT NULL,\n" +
                         " y REAL NOT NULL,\n" +
                         " length REAL NOT NULL,\n" +
