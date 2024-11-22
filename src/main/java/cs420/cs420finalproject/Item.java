@@ -6,14 +6,16 @@ public class Item {
 
     private String name;
     private String type;
+    private double price;
     private double x;
     private double y;
     private double length;
     private double width;
 
-    public Item(String name, String type, double x, double y, double length, double width) {
+    public Item(String name, String type, double price, double x, double y, double length, double width) {
         this.name = name;
         this.type = type;
+        this.price = price;
         this.x = x;
         this.y = y;
         this.length = length;
@@ -34,6 +36,14 @@ public class Item {
 
     public String getType() {
         return type;
+    }
+
+    public void setPrice(Double price) {
+        this.price = price;
+    }
+
+    public Double getPrice() {
+        return price;
     }
 
     public double getX() {
